@@ -14,7 +14,7 @@ import { useNotification } from '../components/NotificationProvider';
 type Props = StackScreenProps<MainStackParamList, 'KanbanBoard'>;
 
 const { width } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - 48) / 3; // Account for padding and gaps
+const COLUMN_WIDTH = Math.max((width - 60) / 3, 280); // Minimum 280px width, responsive
 
 interface KanbanColumn {
   id: Task['status'];
@@ -98,18 +98,29 @@ export default function KanbanScreen({ navigation }: Props) {
       }
     };
 
+    const getPriorityIcon = (priority: Task['priority']) => {
+      switch (priority) {
+        case 'high': return '🔥';
+        case 'medium': return '⚡';
+        case 'low': return '📝';
+        default: return '📝';
+      }
+    };
+
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
 
     return (
       <Card style={[styles.taskCard, isOverdue && styles.overdueCard]}>
         <Card.Content style={styles.taskContent}>
           <View style={styles.taskHeader}>
-            <Text variant="bodyMedium" style={styles.taskTitle} numberOfLines={2}>
-              {task.title}
-            </Text>
+            <View style={styles.taskTitleContainer}>
+              <Text variant="titleSmall" style={styles.taskTitle} numberOfLines={3}>
+                {task.title}
+              </Text>
+            </View>
             <IconButton
               icon="delete"
-              size={16}
+              size={18}
               iconColor="#EF4444"
               onPress={() => handleDeleteTask(task.id, task.title)}
               style={styles.deleteButton}
@@ -117,26 +128,31 @@ export default function KanbanScreen({ navigation }: Props) {
           </View>
           
           {task.description && (
-            <Text variant="bodySmall" style={styles.taskDescription} numberOfLines={2}>
+            <Text variant="bodyMedium" style={styles.taskDescription} numberOfLines={3}>
               {task.description}
             </Text>
           )}
 
           <View style={styles.taskMeta}>
-            <Chip
-              mode="outlined"
-              compact
-              style={styles.priorityChip}
-              textStyle={{ color: getPriorityColor(task.priority), fontSize: 10 }}
-            >
-              {task.priority.toUpperCase()}
-            </Chip>
+            <View style={styles.priorityContainer}>
+              <Text style={styles.priorityIcon}>{getPriorityIcon(task.priority)}</Text>
+              <Text style={[styles.priorityText, { color: getPriorityColor(task.priority) }]}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </Text>
+            </View>
             
             {task.dueDate && (
-              <Text variant="bodySmall" style={[styles.dueDate, isOverdue && styles.overdueDueDate]}>
-                {isOverdue ? '⚠️ ' : '📅 '}
-                {new Date(task.dueDate).toLocaleDateString()}
-              </Text>
+              <View style={styles.dueDateContainer}>
+                <Text style={[styles.dueDate, isOverdue && styles.overdueDueDate]}>
+                  {isOverdue ? '⚠️' : '📅'}
+                </Text>
+                <Text style={[styles.dueDateText, isOverdue && styles.overdueDueDate]}>
+                  {new Date(task.dueDate).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -147,7 +163,7 @@ export default function KanbanScreen({ navigation }: Props) {
                 mode="outlined"
                 compact
                 onPress={() => onMove('to-do')}
-                style={styles.moveButton}
+                style={[styles.moveButton, styles.todoButton]}
                 labelStyle={styles.moveButtonLabel}
               >
                 📋 To Do
@@ -158,10 +174,10 @@ export default function KanbanScreen({ navigation }: Props) {
                 mode="outlined"
                 compact
                 onPress={() => onMove('in-progress')}
-                style={styles.moveButton}
+                style={[styles.moveButton, styles.progressButton]}
                 labelStyle={styles.moveButtonLabel}
               >
-                ⏳ Progress
+                ⏳ Working
               </Button>
             )}
             {task.status !== 'completed' && (
@@ -169,7 +185,7 @@ export default function KanbanScreen({ navigation }: Props) {
                 mode="outlined"
                 compact
                 onPress={() => onMove('completed')}
-                style={styles.moveButton}
+                style={[styles.moveButton, styles.doneButton]}
                 labelStyle={styles.moveButtonLabel}
               >
                 ✅ Done
@@ -211,20 +227,29 @@ export default function KanbanScreen({ navigation }: Props) {
           <View style={styles.emptyColumn}>
             <MaterialCommunityIcons 
               name={column.icon as any} 
-              size={48} 
-              color="#E5E7EB" 
+              size={56} 
+              color="#D1D5DB" 
             />
-            <Text variant="bodySmall" style={styles.emptyText}>
-              No tasks
+            <Text variant="bodyMedium" style={styles.emptyText}>
+              {column.id === 'to-do' ? 'No pending tasks' :
+               column.id === 'in-progress' ? 'Nothing in progress' :
+               'No completed tasks'}
+            </Text>
+            <Text variant="bodySmall" style={styles.emptySubtext}>
+              {column.id === 'to-do' ? 'Create your first task to get started' :
+               column.id === 'in-progress' ? 'Move tasks here when you start working' :
+               'Completed tasks will appear here'}
             </Text>
             {column.id === 'to-do' && (
               <Button
-                mode="outlined"
+                mode="contained"
                 compact
                 onPress={() => navigation.navigate('MainTabs', { screen: 'Create' })}
                 style={styles.addTaskButton}
+                buttonColor="#667eea"
               >
-                + Add Task
+                <MaterialCommunityIcons name="plus" size={16} />
+                Add First Task
               </Button>
             )}
           </View>
@@ -355,59 +380,76 @@ const styles = StyleSheet.create({
   statsCard: {
     margin: 16,
     marginTop: 8,
-    elevation: 2,
-    borderRadius: 12,
+    elevation: 3,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   statsContent: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   statItem: {
     alignItems: 'center',
+    minWidth: 60,
   },
   statNumber: {
     color: '#2E3A59',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 24,
   },
   statLabel: {
     color: '#6B7280',
-    marginTop: 2,
+    marginTop: 4,
+    fontSize: 12,
+    textAlign: 'center',
   },
   boardContainer: {
     paddingHorizontal: 16,
+    paddingBottom: 16,
     flexGrow: 1,
   },
   column: {
     width: COLUMN_WIDTH,
-    marginRight: 12,
+    marginRight: 16,
     flex: 1,
+    minHeight: 500,
   },
   columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   columnTitle: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
   },
   taskCount: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 28,
     alignItems: 'center',
   },
   taskCountText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   columnContent: {
     flex: 1,
@@ -417,69 +459,125 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
+    paddingVertical: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
   },
   emptyText: {
+    color: '#6B7280',
+    marginTop: 12,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptySubtext: {
     color: '#9CA3AF',
-    marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 20,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   addTaskButton: {
     borderColor: '#667eea',
-  },
-  taskList: {
-    paddingBottom: 16,
-  },
-  taskWrapper: {
-    marginBottom: 8,
-  },
-  activeTask: {
-    opacity: 0.8,
-    transform: [{ scale: 1.02 }],
-  },
-  taskCard: {
-    elevation: 2,
     borderRadius: 8,
   },
+  taskList: {
+    paddingBottom: 20,
+  },
+  taskWrapper: {
+    marginBottom: 12,
+  },
+  activeTask: {
+    opacity: 0.9,
+    transform: [{ scale: 1.03 }],
+    elevation: 8,
+  },
+  taskCard: {
+    elevation: 3,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
   overdueCard: {
-    borderLeftWidth: 4,
+    borderLeftWidth: 5,
     borderLeftColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   taskContent: {
-    padding: 12,
+    padding: 16,
   },
   taskHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  taskTitleContainer: {
+    flex: 1,
+    paddingRight: 8,
   },
   taskTitle: {
-    flex: 1,
-    color: '#2E3A59',
-    fontWeight: '500',
-    paddingRight: 8,
+    color: '#1F2937',
+    fontWeight: '600',
+    fontSize: 15,
+    lineHeight: 20,
   },
   deleteButton: {
     margin: 0,
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
   },
   taskDescription: {
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 12,
+    fontSize: 14,
+    lineHeight: 20,
   },
   taskMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  priorityChip: {
-    height: 24,
+  priorityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  priorityIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  priorityText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  dueDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   dueDate: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+  dueDateText: {
     color: '#6B7280',
     fontSize: 12,
+    fontWeight: '500',
   },
   overdueDueDate: {
     color: '#EF4444',
@@ -488,24 +586,42 @@ const styles = StyleSheet.create({
   moveButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 8,
   },
   moveButton: {
-    borderRadius: 6,
-    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 32,
+  },
+  todoButton: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  progressButton: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+  },
+  doneButton: {
+    borderColor: '#10B981',
+    backgroundColor: '#ECFDF5',
   },
   moveButtonLabel: {
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '600',
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     padding: 16,
     paddingTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   actionButton: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 12,
+    elevation: 2,
   },
 });

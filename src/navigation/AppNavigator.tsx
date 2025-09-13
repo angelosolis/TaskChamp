@@ -18,6 +18,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import TaskListScreen from '../screens/TaskListScreen';
 import CalendarScreen from '../screens/CalendarScreen';
+import AcademicScreen from '../screens/AcademicScreen';
 import CreateTaskScreen from '../screens/CreateTaskScreen';
 import AIInsightsScreen from '../screens/AIInsightsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -68,6 +69,16 @@ function TabNavigator() {
           title: 'Calendar',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="Academic"
+        component={AcademicScreen}
+        options={{
+          title: 'Academic',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="school" size={size} color={color} />
           ),
         }}
       />

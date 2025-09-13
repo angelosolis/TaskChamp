@@ -3,6 +3,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import authReducer from './slices/authSlice';
 import taskReducer from './slices/taskSlice';
 import calendarReducer from './slices/calendarSlice';
+import academicReducer from './slices/academicSlice';
 import { RootState } from '../types';
 
 export const store = configureStore({
@@ -10,6 +11,7 @@ export const store = configureStore({
     auth: authReducer,
     tasks: taskReducer,
     calendar: calendarReducer,
+    academic: academicReducer,
   },
 });
 

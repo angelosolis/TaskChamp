@@ -5,6 +5,36 @@ export interface User {
   avatar?: string;
 }
 
+export interface Course {
+  id: string;
+  code: string; // CS101, MATH202, etc.
+  name: string;
+  professor?: string;
+  color: string;
+  credits?: number;
+  currentGrade?: number;
+  targetGrade?: number;
+}
+
+export interface AcademicResource {
+  id: string;
+  type: 'link' | 'file' | 'note' | 'video' | 'document';
+  title: string;
+  url?: string;
+  description?: string;
+  attachedAt: string;
+}
+
+export interface StudySession {
+  id: string;
+  taskId: string;
+  startTime: string;
+  endTime?: string;
+  duration: number; // in minutes
+  type: 'focus' | 'break' | 'review';
+  productivity?: 'low' | 'medium' | 'high';
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -16,6 +46,22 @@ export interface Task {
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
+  
+  // Academic Features
+  courseId?: string; // Links to Course
+  taskType: 'assignment' | 'exam' | 'project' | 'reading' | 'study' | 'other';
+  estimatedTime?: number; // in minutes
+  actualTime?: number; // tracked time in minutes
+  difficulty?: 'easy' | 'medium' | 'hard';
+  grade?: number; // 0-100 or 0-4.0 scale
+  weight?: number; // % of final grade
+  resources: AcademicResource[];
+  studySessions: StudySession[];
+  
+  // Smart Priority (calculated)
+  smartPriority?: number; // 0-100 calculated score
+  urgencyScore?: number;
+  importanceScore?: number;
 }
 
 export interface CalendarEvent {
@@ -46,7 +92,14 @@ export interface TaskState {
   isLoading: boolean;
   error: string | null;
   filter: 'all' | 'active' | 'completed';
-  sortBy: 'dueDate' | 'priority' | 'created';
+  sortBy: 'dueDate' | 'priority' | 'created' | 'smartPriority';
+}
+
+export interface AcademicState {
+  courses: Course[];
+  currentSemester: string;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export interface CalendarState {
@@ -61,6 +114,7 @@ export interface RootState {
   auth: AuthState;
   tasks: TaskState;
   calendar: CalendarState;
+  academic: AcademicState;
 }
 
 // Navigation types
@@ -73,6 +127,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Dashboard: undefined;
   Calendar: undefined;
+  Academic: undefined;
   Create: undefined;
   Profile: undefined;
 };

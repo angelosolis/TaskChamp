@@ -4,8 +4,6 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -18,7 +16,6 @@
     "@reduxjs/toolkit": "^2.8.2",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.8",
-    "expo-dev-client": "~6.0.12",
     "expo-device": "~8.0.7",
     "expo-linear-gradient": "~15.0.7",
     "expo-notifications": "~0.32.11",

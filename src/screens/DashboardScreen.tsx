@@ -308,45 +308,72 @@ export default function DashboardScreen({ navigation }: Props) {
             <Text variant="titleMedium" style={styles.cardTitle}>
               Quick Actions
             </Text>
-            <View style={styles.modernQuickActions}>
+            {/* Primary Action */}
+            <View style={styles.primaryActionContainer}>
               <Button
                 mode="contained"
                 onPress={() => navigation.navigate('Create')}
                 style={[styles.quickActionButton, styles.primaryAction]}
-                contentStyle={styles.quickActionContent}
+                contentStyle={styles.primaryActionContent}
                 buttonColor="#667eea"
+                labelStyle={styles.primaryActionLabel}
+                icon={({ size, color }) => (
+                  <MaterialCommunityIcons name="plus" size={22} color={color} />
+                )}
               >
-                <MaterialCommunityIcons name="plus" size={24} color="white" />
-                New Task
+                Create New Task
               </Button>
+            </View>
+
+            {/* Secondary Actions */}
+            <View style={styles.secondaryActionsGrid}>
               <Button
                 mode="outlined"
                 onPress={() => navigation.navigate('KanbanBoard')}
-                style={styles.quickActionButton}
-                contentStyle={styles.quickActionContent}
+                style={[styles.secondaryActionButton, styles.kanbanButton]}
+                contentStyle={styles.secondaryActionContent}
+                labelStyle={styles.secondaryActionLabel}
+                icon={({ size, color }) => (
+                  <MaterialCommunityIcons name="view-column" size={18} color="#F59E0B" />
+                )}
               >
-                <MaterialCommunityIcons name="view-column" size={24} />
-                Kanban
+                Kanban Board
               </Button>
-            </View>
-            <View style={styles.modernQuickActions}>
               <Button
                 mode="outlined"
                 onPress={() => navigation.navigate('TaskList')}
-                style={styles.quickActionButton}
-                contentStyle={styles.quickActionContent}
+                style={[styles.secondaryActionButton, styles.listButton]}
+                contentStyle={styles.secondaryActionContent}
+                labelStyle={styles.secondaryActionLabel}
+                icon={({ size, color }) => (
+                  <MaterialCommunityIcons name="format-list-bulleted" size={18} color="#10B981" />
+                )}
               >
-                <MaterialCommunityIcons name="format-list-bulleted" size={24} />
                 All Tasks
               </Button>
               <Button
                 mode="outlined"
                 onPress={() => navigation.navigate('AIInsights')}
-                style={styles.quickActionButton}
-                contentStyle={styles.quickActionContent}
+                style={[styles.secondaryActionButton, styles.aiButton]}
+                contentStyle={styles.secondaryActionContent}
+                labelStyle={styles.secondaryActionLabel}
+                icon={({ size, color }) => (
+                  <MaterialCommunityIcons name="brain" size={18} color="#8B5CF6" />
+                )}
               >
-                <MaterialCommunityIcons name="chart-line" size={24} />
-                Insights
+                AI Insights
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('MainTabs', { screen: 'Academic' })}
+                style={[styles.secondaryActionButton, styles.academicButton]}
+                contentStyle={styles.secondaryActionContent}
+                labelStyle={styles.secondaryActionLabel}
+                icon={({ size, color }) => (
+                  <MaterialCommunityIcons name="school" size={18} color="#667eea" />
+                )}
+              >
+                Academic Hub
               </Button>
             </View>
           </Card.Content>
@@ -590,20 +617,65 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     elevation: 3,
   },
-  modernQuickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+  primaryActionContainer: {
+    marginTop: 16,
+    marginBottom: 12,
   },
   quickActionButton: {
-    flex: 1,
     borderRadius: 12,
-  },
-  quickActionContent: {
-    height: 56,
-    flexDirection: 'row-reverse',
   },
   primaryAction: {
     elevation: 4,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  primaryActionContent: {
+    height: 52,
+    paddingHorizontal: 24,
+  },
+  primaryActionLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 12,
+  },
+  secondaryActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8,
+  },
+  secondaryActionButton: {
+    flex: 1,
+    minWidth: '30%',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    elevation: 1,
+  },
+  secondaryActionContent: {
+    height: 44,
+    paddingHorizontal: 12,
+  },
+  secondaryActionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  kanbanButton: {
+    borderColor: '#FEF3C7',
+    backgroundColor: '#FFFBEB',
+  },
+  listButton: {
+    borderColor: '#D1FAE5',
+    backgroundColor: '#ECFDF5',
+  },
+  aiButton: {
+    borderColor: '#EDE9FE',
+    backgroundColor: '#F5F3FF',
+  },
+  academicButton: {
+    borderColor: '#E0E7FF',
+    backgroundColor: '#EEF2FF',
   },
 });
