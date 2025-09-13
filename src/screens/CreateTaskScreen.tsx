@@ -4,12 +4,20 @@ import { Text, TextInput, Button, Card, Snackbar, SegmentedButtons, Surface } fr
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { StackScreenProps } from '@react-navigation/stack';
+import ModernHeader from '../components/ModernHeader';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createTask } from '../store/slices/taskSlice';
-import { MainTabParamList } from '../types';
+import { MainTabParamList, MainStackParamList } from '../types';
+import { inAppAlertService } from '../services/inAppAlertService';
+import { useNotification } from '../components/NotificationProvider';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Create'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Create'>,
+  StackScreenProps<MainStackParamList>
+>;
 
 export default function CreateTaskScreen({ navigation }: Props) {
   const [title, setTitle] = useState('');
@@ -22,6 +30,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
 
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.tasks);
+  const { showInfo, showError } = useNotification();
 
   const handleCreateTask = async () => {
     if (!title.trim()) {
@@ -50,11 +59,25 @@ export default function CreateTaskScreen({ navigation }: Props) {
       
       // Navigate to tasks after a short delay
       setTimeout(() => {
-        navigation.navigate('Tasks');
+        navigation.navigate('TaskList');
       }, 1000);
     } catch (error) {
       // Error is handled by Redux
     }
+  };
+
+  const handleTestAlert = () => {
+    showInfo(
+      "Good morning, Champion!",
+      "🌟 Ready to tackle your tasks today? Let's make today productive!"
+    );
+  };
+
+  const handleTestOverdueAlert = () => {
+    showError(
+      "🚨 Overdue Tasks!",
+      "You have 2 overdue tasks:\n\n• Submit Assignment 🔥\n• Study for Quiz\n\nTime to catch up!"
+    );
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -79,20 +102,19 @@ export default function CreateTaskScreen({ navigation }: Props) {
   ];
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <Surface style={styles.header}>
-          <Text variant="headlineMedium" style={styles.title}>
-            Create New Task
-          </Text>
-          <Text variant="bodyMedium" style={styles.subtitle}>
-            Add a new task to your list
-          </Text>
-        </Surface>
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <ModernHeader
+        title="Create New Task"
+        subtitle="Add a new task to your list"
+        gradient={['#10B981', '#059669']}
+      />
+      
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
 
         <Card style={styles.formCard}>
           <Card.Content style={styles.formContent}>
@@ -212,6 +234,29 @@ export default function CreateTaskScreen({ navigation }: Props) {
             >
               Create Task
             </Button>
+
+            {/* Test Alert Buttons */}
+            <View style={styles.testSection}>
+              <Button
+                mode="outlined"
+                onPress={handleTestAlert}
+                style={styles.testButton}
+                contentStyle={styles.testButtonContent}
+              >
+                <MaterialCommunityIcons name="emoticon-happy" size={20} />
+                Test Motivation
+              </Button>
+              
+              <Button
+                mode="outlined"
+                onPress={handleTestOverdueAlert}
+                style={[styles.testButton, styles.warningTestButton]}
+                contentStyle={styles.testButtonContent}
+              >
+                <MaterialCommunityIcons name="alert" size={20} />
+                Test Overdue Alert
+              </Button>
+            </View>
           </Card.Content>
         </Card>
 
@@ -245,33 +290,23 @@ export default function CreateTaskScreen({ navigation }: Props) {
         >
           {error}
         </Snackbar>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#F8FAFC',
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   content: {
     padding: 16,
-  },
-  header: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    elevation: 1,
-    borderRadius: 12,
-  },
-  title: {
-    color: '#2E3A59',
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: '#6B7280',
-    marginTop: 4,
+    paddingTop: 8,
   },
   formCard: {
     elevation: 2,
@@ -317,6 +352,19 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 16,
     backgroundColor: '#2E3A59',
+  },
+  testSection: {
+    marginTop: 16,
+    gap: 8,
+  },
+  testButton: {
+    borderColor: '#4A90E2',
+  },
+  warningTestButton: {
+    borderColor: '#D97706',
+  },
+  testButtonContent: {
+    height: 44,
   },
   submitButtonContent: {
     height: 48,

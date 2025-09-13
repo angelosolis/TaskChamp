@@ -3,49 +3,34 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AppState } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { loadUser } from '../store/slices/authSlice';
 import { loadTasks } from '../store/slices/taskSlice';
+import { loadEvents } from '../store/slices/calendarSlice';
+import { inAppAlertService } from '../services/inAppAlertService';
+import { useNotification } from '../components/NotificationProvider';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import TaskListScreen from '../screens/TaskListScreen';
+import CalendarScreen from '../screens/CalendarScreen';
 import CreateTaskScreen from '../screens/CreateTaskScreen';
 import AIInsightsScreen from '../screens/AIInsightsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
+import KanbanScreen from '../screens/KanbanScreen';
 
-import { RootStackParamList, MainTabParamList, TaskStackParamList } from '../types';
+import { RootStackParamList, MainTabParamList, MainStackParamList } from '../types';
 
 const RootStack = createStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
-const TaskStack = createStackNavigator<TaskStackParamList>();
+const MainStack = createStackNavigator<MainStackParamList>();
 
-function TaskNavigator() {
-  return (
-    <TaskStack.Navigator screenOptions={{ headerShown: false }}>
-      <TaskStack.Screen
-        name="TaskList"
-        component={TaskListScreen}
-      />
-      <TaskStack.Screen
-        name="TaskDetail"
-        component={TaskDetailScreen}
-      />
-    </TaskStack.Navigator>
-  );
-}
-
-function MainTabNavigator() {
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    dispatch(loadTasks());
-  }, [dispatch]);
-
+function TabNavigator() {
   return (
     <MainTab.Navigator
       screenOptions={{
@@ -77,12 +62,12 @@ function MainTabNavigator() {
         }}
       />
       <MainTab.Screen
-        name="Tasks"
-        component={TaskNavigator}
+        name="Calendar"
+        component={CalendarScreen}
         options={{
-          title: 'Tasks',
+          title: 'Calendar',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="clipboard-list" size={size} color={color} />
+            <MaterialCommunityIcons name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -97,16 +82,6 @@ function MainTabNavigator() {
         }}
       />
       <MainTab.Screen
-        name="AIInsights"
-        component={AIInsightsScreen}
-        options={{
-          title: 'Insights',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chart-line" size={size} color={color} />
-          ),
-        }}
-      />
-      <MainTab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
@@ -117,6 +92,61 @@ function MainTabNavigator() {
         }}
       />
     </MainTab.Navigator>
+  );
+}
+
+function MainTabNavigator() {
+  const dispatch = useAppDispatch();
+  const { tasks } = useAppSelector((state) => state.tasks);
+  const { showSuccess, showWarning, showError, showInfo } = useNotification();
+
+  // Inject notification functions into the service
+  useEffect(() => {
+    inAppAlertService.setNotificationFunctions({
+      showSuccess,
+      showWarning,
+      showError,
+      showInfo,
+    });
+  }, [showSuccess, showWarning, showError, showInfo]);
+
+  useEffect(() => {
+    dispatch(loadTasks());
+    dispatch(loadEvents());
+  }, [dispatch]);
+
+  // Check for alerts when tasks load or app becomes active
+  useEffect(() => {
+    if (tasks.length > 0) {
+      // Small delay to let the app finish loading
+      setTimeout(() => {
+        inAppAlertService.checkAndShowAlerts(tasks);
+      }, 1000);
+    }
+  }, [tasks]);
+
+  // Listen for app state changes to show alerts when returning to app
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'active' && tasks.length > 0) {
+        setTimeout(() => {
+          inAppAlertService.checkAndShowAlerts(tasks);
+        }, 500);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [tasks]);
+
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      <MainStack.Screen name="MainTabs" component={TabNavigator} />
+      <MainStack.Screen name="TaskList" component={TaskListScreen} />
+      <MainStack.Screen name="TaskDetail" component={TaskDetailScreen} />
+      <MainStack.Screen name="AIInsights" component={AIInsightsScreen} />
+      <MainStack.Screen name="KanbanBoard" component={KanbanScreen} />
+    </MainStack.Navigator>
   );
 }
 

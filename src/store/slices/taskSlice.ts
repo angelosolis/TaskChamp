@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TaskState, Task } from '../../types';
+import { inAppAlertService } from '../../services/inAppAlertService';
 
 // Mock data storage key
 const TASKS_STORAGE_KEY = 'tasks';
@@ -20,6 +21,7 @@ export const createTask = createAsyncThunk(
     const newTask: Task = {
       ...taskData,
       id: Date.now().toString(),
+      status: taskData.status || (taskData.completed ? 'completed' : 'to-do'),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -47,14 +49,30 @@ export const updateTask = createAsyncThunk(
       throw new Error('Task not found');
     }
     
+    const oldTask = tasks[taskIndex];
+    
+    // Sync status and completed fields
+    let syncedUpdates = { ...updates };
+    if (updates.status) {
+      syncedUpdates.completed = updates.status === 'completed';
+    } else if (updates.completed !== undefined) {
+      syncedUpdates.status = updates.completed ? 'completed' : 'to-do';
+    }
+    
     const updatedTask: Task = {
-      ...tasks[taskIndex],
-      ...updates,
+      ...oldTask,
+      ...syncedUpdates,
       updatedAt: new Date().toISOString(),
     };
     
     tasks[taskIndex] = updatedTask;
     await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+    
+    // Handle task completion celebration
+    if (updatedTask.completed && !oldTask.completed) {
+      // Show in-app celebration when task is completed
+      inAppAlertService.showCompletionCelebration(updatedTask);
+    }
     
     return updatedTask;
   }
@@ -70,6 +88,37 @@ export const deleteTask = createAsyncThunk(
     await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(filteredTasks));
     
     return id;
+  }
+);
+
+export const updateTaskStatus = createAsyncThunk(
+  'tasks/updateTaskStatus',
+  async ({ id, status }: { id: string; status: Task['status'] }) => {
+    const existingTasks = await AsyncStorage.getItem(TASKS_STORAGE_KEY);
+    const tasks: Task[] = existingTasks ? JSON.parse(existingTasks) : [];
+    
+    const taskIndex = tasks.findIndex(task => task.id === id);
+    if (taskIndex === -1) {
+      throw new Error('Task not found');
+    }
+    
+    const oldTask = tasks[taskIndex];
+    const updatedTask: Task = {
+      ...oldTask,
+      status,
+      completed: status === 'completed',
+      updatedAt: new Date().toISOString(),
+    };
+    
+    tasks[taskIndex] = updatedTask;
+    await AsyncStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+    
+    // Handle task completion celebration
+    if (status === 'completed' && oldTask.status !== 'completed') {
+      inAppAlertService.showCompletionCelebration(updatedTask);
+    }
+    
+    return updatedTask;
   }
 );
 
@@ -103,7 +152,11 @@ const taskSlice = createSlice({
     });
     builder.addCase(loadTasks.fulfilled, (state, action: PayloadAction<Task[]>) => {
       state.isLoading = false;
-      state.tasks = action.payload;
+      // Ensure all tasks have a status field for backwards compatibility
+      state.tasks = action.payload.map(task => ({
+        ...task,
+        status: task.status || (task.completed ? 'completed' : 'to-do'),
+      }));
     });
     builder.addCase(loadTasks.rejected, (state, action) => {
       state.isLoading = false;
@@ -153,6 +206,23 @@ const taskSlice = createSlice({
     builder.addCase(deleteTask.rejected, (state, action) => {
       state.isLoading = false;
       state.error = action.error.message || 'Failed to delete task';
+    });
+
+    // Update task status
+    builder.addCase(updateTaskStatus.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(updateTaskStatus.fulfilled, (state, action: PayloadAction<Task>) => {
+      state.isLoading = false;
+      const index = state.tasks.findIndex(task => task.id === action.payload.id);
+      if (index !== -1) {
+        state.tasks[index] = action.payload;
+      }
+    });
+    builder.addCase(updateTaskStatus.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.error.message || 'Failed to update task status';
     });
   },
 });

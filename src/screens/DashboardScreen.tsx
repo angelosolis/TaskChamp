@@ -3,12 +3,17 @@ import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Text, Card, Button, Surface, ProgressBar, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { StackScreenProps } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppSelector } from '../store/store';
-import { MainTabParamList, Task } from '../types';
+import { MainTabParamList, MainStackParamList, Task } from '../types';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Dashboard'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Dashboard'>,
+  StackScreenProps<MainStackParamList>
+>;
 
 const { width } = Dimensions.get('window');
 
@@ -105,7 +110,7 @@ export default function DashboardScreen({ navigation }: Props) {
           icon="chevron-right"
           size={20}
           iconColor="#9CA3AF"
-          onPress={() => navigation.navigate('Tasks')}
+          onPress={() => navigation.navigate('TaskList')}
         />
       </View>
     </Surface>
@@ -282,7 +287,7 @@ export default function DashboardScreen({ navigation }: Props) {
                 <Button
                   mode="text"
                   compact
-                  onPress={() => navigation.navigate('Tasks')}
+                  onPress={() => navigation.navigate('TaskList')}
                 >
                   View All
                 </Button>
@@ -313,6 +318,26 @@ export default function DashboardScreen({ navigation }: Props) {
               >
                 <MaterialCommunityIcons name="plus" size={24} color="white" />
                 New Task
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('KanbanBoard')}
+                style={styles.quickActionButton}
+                contentStyle={styles.quickActionContent}
+              >
+                <MaterialCommunityIcons name="view-column" size={24} />
+                Kanban
+              </Button>
+            </View>
+            <View style={styles.modernQuickActions}>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('TaskList')}
+                style={styles.quickActionButton}
+                contentStyle={styles.quickActionContent}
+              >
+                <MaterialCommunityIcons name="format-list-bulleted" size={24} />
+                All Tasks
               </Button>
               <Button
                 mode="outlined"

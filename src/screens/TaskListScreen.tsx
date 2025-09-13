@@ -3,12 +3,13 @@ import { View, StyleSheet, FlatList } from 'react-native';
 import { Text, Card, Chip, Surface, FAB, Searchbar, Button, Menu } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import ModernHeader from '../components/ModernHeader';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { updateTask, setFilter, setSortBy } from '../store/slices/taskSlice';
-import { TaskStackParamList, Task } from '../types';
+import { MainStackParamList, Task } from '../types';
 
-type Props = StackScreenProps<TaskStackParamList, 'TaskList'>;
+type Props = StackScreenProps<MainStackParamList, 'TaskList'>;
 
 export default function TaskListScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,12 +151,23 @@ export default function TaskListScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Surface style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          My Tasks
-        </Text>
-        <View style={styles.headerActions}>
+      {/* Modern Header */}
+      <ModernHeader
+        title="My Tasks"
+        subtitle={`${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
+        gradient={['#4A90E2', '#357ABD']}
+        leftElement={
+          <Button
+            mode="text"
+            compact
+            onPress={() => navigation.navigate('KanbanBoard')}
+            textColor="#FFFFFF"
+          >
+            <MaterialIcons name="view-column" size={20} color="#FFFFFF" />
+            Board
+          </Button>
+        }
+        rightElement={
           <Menu
             visible={sortMenuVisible}
             onDismiss={() => setSortMenuVisible(false)}
@@ -164,8 +176,9 @@ export default function TaskListScreen({ navigation }: Props) {
                 mode="text"
                 compact
                 onPress={() => setSortMenuVisible(true)}
+                textColor="#FFFFFF"
               >
-                <MaterialIcons name="sort" size={20} />
+                <MaterialIcons name="sort" size={20} color="#FFFFFF" />
                 Sort
               </Button>
             }
@@ -192,8 +205,8 @@ export default function TaskListScreen({ navigation }: Props) {
               }}
             />
           </Menu>
-        </View>
-      </Surface>
+        }
+      />
 
       {/* Search */}
       <Searchbar
@@ -269,23 +282,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFBFC',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 12,
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-  },
-  title: {
-    color: '#2E3A59',
-    fontWeight: 'bold',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 8,
   },
   searchbar: {
     margin: 16,

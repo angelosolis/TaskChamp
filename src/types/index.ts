@@ -10,9 +10,26 @@ export interface Task {
   title: string;
   description?: string;
   completed: boolean;
+  status: 'to-do' | 'in-progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   category?: string;
   dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'class' | 'exam' | 'assignment' | 'event' | 'reminder';
+  startDate: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  color?: string;
+  recurring?: 'none' | 'daily' | 'weekly' | 'monthly';
   createdAt: string;
   updatedAt: string;
 }
@@ -32,9 +49,18 @@ export interface TaskState {
   sortBy: 'dueDate' | 'priority' | 'created';
 }
 
+export interface CalendarState {
+  events: CalendarEvent[];
+  isLoading: boolean;
+  error: string | null;
+  selectedDate: string;
+  viewMode: 'month' | 'week' | 'day';
+}
+
 export interface RootState {
   auth: AuthState;
   tasks: TaskState;
+  calendar: CalendarState;
 }
 
 // Navigation types
@@ -46,13 +72,15 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   Dashboard: undefined;
-  Tasks: undefined;
+  Calendar: undefined;
   Create: undefined;
-  AIInsights: undefined;
   Profile: undefined;
 };
 
-export type TaskStackParamList = {
+export type MainStackParamList = {
+  MainTabs: undefined;
   TaskList: undefined;
   TaskDetail: { taskId: string };
+  AIInsights: undefined;
+  KanbanBoard: undefined;
 };

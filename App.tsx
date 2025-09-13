@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
@@ -6,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { store } from './src/store/store';
 import AppNavigator from './src/navigation/AppNavigator';
+import { NotificationProvider } from './src/components/NotificationProvider';
 
 const theme = {
   ...MD3LightTheme,
@@ -25,8 +27,10 @@ export default function App() {
     <SafeAreaProvider>
       <Provider store={store}>
         <PaperProvider theme={theme}>
-          <StatusBar style="light" backgroundColor="#2E3A59" />
-          <AppNavigator />
+          <NotificationProvider>
+            <StatusBar style="light" backgroundColor="#2E3A59" />
+            <AppNavigator />
+          </NotificationProvider>
         </PaperProvider>
       </Provider>
     </SafeAreaProvider>

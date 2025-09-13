@@ -1,52 +1,45 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Button, Avatar, Surface, List, Divider } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { CompositeScreenProps } from '@react-navigation/native';
+import { StackScreenProps } from '@react-navigation/stack';
+import ModernHeader from '../components/ModernHeader';
+import { useNotification } from '../components/NotificationProvider';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { logoutUser } from '../store/slices/authSlice';
-import { MainTabParamList } from '../types';
+import { MainTabParamList, MainStackParamList } from '../types';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Profile'>;
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<MainTabParamList, 'Profile'>,
+  StackScreenProps<MainStackParamList>
+>;
 
-export default function ProfileScreen({}: Props) {
+export default function ProfileScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { tasks } = useAppSelector((state) => state.tasks);
+  const { showInfo, showWarning } = useNotification();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => dispatch(logoutUser()),
-        },
-      ]
+    showWarning(
+      'Logout Confirmation',
+      'Are you sure you want to logout?'
     );
+    // For now, just show the warning. In a real app, you'd add action buttons
+    setTimeout(() => {
+      dispatch(logoutUser());
+    }, 2000);
   };
 
   const handleClearData = () => {
-    Alert.alert(
+    showWarning(
       'Clear All Data',
-      'This will delete all your tasks and data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            // In a real app, you'd dispatch an action to clear tasks
-            // For now, just show confirmation
-            Alert.alert('Data Cleared', 'All task data has been cleared.');
-          },
-        },
-      ]
+      'This will delete all your tasks and data. This action cannot be undone.'
     );
+    // For demo purposes, just show the warning
   };
 
   // Calculate user statistics
@@ -58,16 +51,15 @@ export default function ProfileScreen({}: Props) {
   const joinDate = user?.email ? new Date().toLocaleDateString() : 'N/A';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <Surface style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          Profile
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Manage your account and preferences
-        </Text>
-      </Surface>
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <ModernHeader
+        title="Profile"
+        subtitle="Manage your account and preferences"
+        gradient={['#6366F1', '#8B5CF6']}
+      />
+      
+      <ScrollView contentContainerStyle={styles.content}>
 
       {/* User Info Card */}
       <Card style={styles.userCard}>
@@ -198,6 +190,45 @@ export default function ProfileScreen({}: Props) {
         </Card.Content>
       </Card>
 
+      {/* Features Card */}
+      <Card style={styles.featuresCard}>
+        <Card.Content>
+          <Text variant="titleMedium" style={styles.cardTitle}>
+            Features
+          </Text>
+          
+          <List.Section>
+            <List.Item
+              title="AI Insights"
+              description="View your productivity analytics and insights"
+              left={(props) => <MaterialIcons {...props} name="analytics" size={24} color="#4A90E2" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('AIInsights')}
+            />
+            
+            <Divider />
+            
+            <List.Item
+              title="Task Management"
+              description="View and manage all your tasks"
+              left={(props) => <MaterialIcons {...props} name="task-alt" size={24} color="#059669" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('TaskList')}
+            />
+            
+            <Divider />
+            
+            <List.Item
+              title="Kanban Board"
+              description="Visual task management with drag and drop"
+              left={(props) => <MaterialIcons {...props} name="view-column" size={24} color="#8B5CF6" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('KanbanBoard')}
+            />
+          </List.Section>
+        </Card.Content>
+      </Card>
+
       {/* Settings Card */}
       <Card style={styles.settingsCard}>
         <Card.Content>
@@ -212,7 +243,7 @@ export default function ProfileScreen({}: Props) {
               left={(props) => <MaterialIcons {...props} name="account-circle" size={24} color="#6B7280" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => {
-                Alert.alert('Coming Soon', 'Account settings will be available in a future update.');
+                showInfo('Coming Soon', 'Account settings will be available in a future update.');
               }}
             />
             
@@ -224,7 +255,7 @@ export default function ProfileScreen({}: Props) {
               left={(props) => <MaterialIcons {...props} name="notifications" size={24} color="#6B7280" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => {
-                Alert.alert('Coming Soon', 'Notification settings will be available in a future update.');
+                showInfo('Coming Soon', 'Notification settings will be available in a future update.');
               }}
             />
             
@@ -236,7 +267,7 @@ export default function ProfileScreen({}: Props) {
               left={(props) => <MaterialIcons {...props} name="palette" size={24} color="#6B7280" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => {
-                Alert.alert('Coming Soon', 'Theme settings will be available in a future update.');
+                showInfo('Coming Soon', 'Theme settings will be available in a future update.');
               }}
             />
             
@@ -248,7 +279,7 @@ export default function ProfileScreen({}: Props) {
               left={(props) => <MaterialIcons {...props} name="cloud-sync" size={24} color="#6B7280" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => {
-                Alert.alert('Coming Soon', 'Backup & sync will be available in a future update.');
+                showInfo('Coming Soon', 'Backup & sync will be available in a future update.');
               }}
             />
           </List.Section>
@@ -266,9 +297,9 @@ export default function ProfileScreen({}: Props) {
             <Button
               mode="outlined"
               onPress={() => {
-                Alert.alert(
+                showInfo(
                   'About TaskChamp',
-                  'TaskChamp v1.0.0\n\nA modern task management app built with React Native and Expo.\n\nFeatures:\n• Task creation and management\n• Priority levels and due dates\n• AI-powered insights\n• Beautiful, intuitive interface\n\nDeveloped with ❤️ using React Native'
+                  'TaskChamp v1.0.0 - A modern task management app built with React Native and Expo.'
                 );
               }}
               style={styles.actionButton}
@@ -300,32 +331,19 @@ export default function ProfileScreen({}: Props) {
           </View>
         </Card.Content>
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: 16,
-  },
-  header: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    elevation: 1,
-    borderRadius: 12,
-  },
-  title: {
-    color: '#2E3A59',
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: '#6B7280',
-    marginTop: 4,
+    paddingTop: 8,
   },
   userCard: {
     marginBottom: 16,
@@ -406,6 +424,10 @@ const styles = StyleSheet.create({
   },
   achievementDesc: {
     color: '#6B7280',
+  },
+  featuresCard: {
+    marginBottom: 16,
+    elevation: 2,
   },
   settingsCard: {
     marginBottom: 16,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, Card, Chip, FAB, Surface, Menu } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useNotification } from '../components/NotificationProvider';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { updateTask, deleteTask } from '../store/slices/taskSlice';
@@ -16,6 +17,7 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
 
   const dispatch = useAppDispatch();
   const { tasks } = useAppSelector((state) => state.tasks);
+  const { showWarning } = useNotification();
   
   const task = tasks.find(t => t.id === taskId);
 
@@ -45,21 +47,15 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
   };
 
   const handleDeleteTask = () => {
-    Alert.alert(
+    showWarning(
       'Delete Task',
-      'Are you sure you want to delete this task? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await dispatch(deleteTask(task.id));
-            navigation.goBack();
-          },
-        },
-      ]
+      'Are you sure you want to delete this task? This action cannot be undone.'
     );
+    // For demo purposes, delete after showing warning
+    setTimeout(async () => {
+      await dispatch(deleteTask(task.id));
+      navigation.goBack();
+    }, 2000);
   };
 
   const getPriorityColor = (priority: string) => {

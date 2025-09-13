@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, Surface, ProgressBar } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import ModernHeader from '../components/ModernHeader';
 
 import { useAppSelector } from '../store/store';
 import { MainTabParamList } from '../types';
@@ -121,16 +122,15 @@ export default function AIInsightsScreen({}: Props) {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <Surface style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          AI Insights
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Analytics and recommendations for your productivity
-        </Text>
-      </Surface>
+    <View style={styles.container}>
+      {/* Modern Header */}
+      <ModernHeader
+        title="AI Insights"
+        subtitle="Analytics and recommendations for your productivity"
+        gradient={['#8B5CF6', '#7C3AED']}
+      />
+      
+      <ScrollView contentContainerStyle={styles.content}>
 
       {/* Quick Stats */}
       <Card style={styles.statsCard}>
@@ -257,32 +257,19 @@ export default function AIInsightsScreen({}: Props) {
           ))}
         </Card.Content>
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: 16,
-  },
-  header: {
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    elevation: 1,
-    borderRadius: 12,
-  },
-  title: {
-    color: '#2E3A59',
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: '#6B7280',
-    marginTop: 4,
+    paddingTop: 8,
   },
   statsCard: {
     marginBottom: 16,
