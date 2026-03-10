@@ -86,6 +86,7 @@ export default function LoginScreen({ navigation }: Props) {
               onPress={handleLogin}
               style={styles.loginButton}
               contentStyle={styles.buttonContent}
+              labelStyle={{ color: '#FFFFFF' }}
               disabled={isLoading || !email.trim() || !password.trim()}
             >
               {isLoading ? (
@@ -93,6 +94,14 @@ export default function LoginScreen({ navigation }: Props) {
               ) : (
                 'Sign In'
               )}
+            </Button>
+
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('PasswordReset')}
+              style={styles.forgotButton}
+            >
+              Forgot Password?
             </Button>
 
             <Button
@@ -154,8 +163,11 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 8,
     backgroundColor: '#2E3A59',
+  },
+  forgotButton: {
+    marginBottom: 4,
   },
   buttonContent: {
     height: 48,

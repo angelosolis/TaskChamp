@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { Task } from '../types';
+import { Task, CalendarEvent } from '../types';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -57,6 +57,14 @@ export class NotificationService {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#DC2626',
+          sound: 'default',
+        });
+
+        await Notifications.setNotificationChannelAsync('calendar-events', {
+          name: 'Calendar Events',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#667eea',
           sound: 'default',
         });
       }
@@ -206,6 +214,89 @@ export class NotificationService {
       },
       trigger: null, // Send immediately
     });
+  }
+
+  // Schedule notifications for a calendar event
+  async scheduleEventNotification(event: CalendarEvent, startTimeDateObj?: Date): Promise<void> {
+    // Build event datetime
+    const eventDate = new Date(event.startDate + 'T00:00:00');
+    const now = new Date();
+
+    // If a time was picked, use it; otherwise default to 8:00 AM
+    if (startTimeDateObj) {
+      eventDate.setHours(startTimeDateObj.getHours(), startTimeDateObj.getMinutes(), 0, 0);
+    } else {
+      eventDate.setHours(8, 0, 0, 0);
+    }
+
+    if (eventDate <= now) return; // Already past
+
+    const typeEmoji: Record<string, string> = {
+      class: '📚', exam: '📝', event: '📅', reminder: '🔔', assignment: '📋',
+    };
+    const emoji = typeEmoji[event.type] || '📅';
+
+    // Cancel any existing notifications for this event
+    await this.cancelEventNotification(event.id);
+
+    const ids: string[] = [];
+
+    // 1 day before at same time
+    const oneDayBefore = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
+    if (oneDayBefore > now) {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${emoji} Tomorrow: ${event.title}`,
+          body: event.startDate ? `Scheduled for ${new Date(event.startDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}` : '',
+          data: { eventId: event.id, type: 'event_reminder' },
+          sound: 'default',
+        },
+        trigger: { date: oneDayBefore, channelId: 'calendar-events' },
+      });
+      ids.push(id);
+    }
+
+    // 1 hour before (only if time was set)
+    if (startTimeDateObj) {
+      const oneHourBefore = new Date(eventDate.getTime() - 60 * 60 * 1000);
+      if (oneHourBefore > now) {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${emoji} In 1 hour: ${event.title}`,
+            body: event.location ? `📍 ${event.location}` : 'Starting soon!',
+            data: { eventId: event.id, type: 'event_soon' },
+            sound: 'default',
+          },
+          trigger: { date: oneHourBefore, channelId: 'calendar-events' },
+        });
+        ids.push(id);
+      }
+    }
+
+    // At event time
+    if (eventDate > now) {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${emoji} Now: ${event.title}`,
+          body: event.location ? `📍 ${event.location}` : "It's time!",
+          data: { eventId: event.id, type: 'event_now' },
+          sound: 'default',
+        },
+        trigger: { date: eventDate, channelId: 'calendar-events' },
+      });
+      ids.push(id);
+    }
+
+    this.storeNotificationIds(`event_${event.id}`, ids);
+  }
+
+  // Cancel notifications for a calendar event
+  async cancelEventNotification(eventId: string): Promise<void> {
+    const ids = this.getStoredNotificationIds(`event_${eventId}`);
+    if (ids.length > 0) {
+      await Notifications.cancelScheduledNotificationsAsync(ids);
+      this.clearStoredNotificationIds(`event_${eventId}`);
+    }
   }
 
   // Daily motivation reminder

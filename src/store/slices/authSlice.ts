@@ -53,6 +53,17 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
   await AsyncStorage.removeItem('user');
 });
 
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async ({ email }: { email: string }) => {
+    // Simulate sending reset email
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!email.includes('@')) throw new Error('Please enter a valid email address.');
+    // In production, call your backend API here
+    return { email };
+  }
+);
+
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
@@ -109,6 +120,19 @@ const authSlice = createSlice({
     builder.addCase(logoutUser.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
+    });
+
+    // Password Reset
+    builder.addCase(resetPassword.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(resetPassword.fulfilled, (state) => {
+      state.isLoading = false;
+    });
+    builder.addCase(resetPassword.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.error.message || 'Failed to send reset email.';
     });
   },
 });

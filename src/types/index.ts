@@ -118,9 +118,12 @@ export interface RootState {
 }
 
 // Navigation types
+import { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  PasswordReset: undefined;
   MainTabs: undefined;
 };
 
@@ -133,9 +136,13 @@ export type MainTabParamList = {
 };
 
 export type MainStackParamList = {
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   TaskList: undefined;
   TaskDetail: { taskId: string };
   AIInsights: undefined;
   KanbanBoard: undefined;
+  GradeForecast: undefined;
+  Analytics: undefined;
+  AccountSettings: undefined;
+  DataPrivacy: undefined;
 };

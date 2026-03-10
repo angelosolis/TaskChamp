@@ -24,6 +24,11 @@ import AIInsightsScreen from '../screens/AIInsightsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import TaskDetailScreen from '../screens/TaskDetailScreen';
 import KanbanScreen from '../screens/KanbanScreen';
+import GradeForecastScreen from '../screens/GradeForecastScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
+import PasswordResetScreen from '../screens/PasswordResetScreen';
+import AccountSettingsScreen from '../screens/AccountSettingsScreen';
+import DataPrivacyScreen from '../screens/DataPrivacyScreen';
 
 import { RootStackParamList, MainTabParamList, MainStackParamList } from '../types';
 
@@ -157,6 +162,10 @@ function MainTabNavigator() {
       <MainStack.Screen name="TaskDetail" component={TaskDetailScreen} />
       <MainStack.Screen name="AIInsights" component={AIInsightsScreen} />
       <MainStack.Screen name="KanbanBoard" component={KanbanScreen} />
+      <MainStack.Screen name="GradeForecast" component={GradeForecastScreen} />
+      <MainStack.Screen name="Analytics" component={AnalyticsScreen} />
+      <MainStack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+      <MainStack.Screen name="DataPrivacy" component={DataPrivacyScreen} />
     </MainStack.Navigator>
   );
 }
@@ -178,6 +187,7 @@ export default function AppNavigator() {
           <>
             <RootStack.Screen name="Login" component={LoginScreen} />
             <RootStack.Screen name="Register" component={RegisterScreen} />
+            <RootStack.Screen name="PasswordReset" component={PasswordResetScreen} />
           </>
         )}
       </RootStack.Navigator>

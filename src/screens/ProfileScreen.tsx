@@ -200,28 +200,40 @@ export default function ProfileScreen({ navigation }: Props) {
           <List.Section>
             <List.Item
               title="AI Insights"
-              description="View your productivity analytics and insights"
-              left={(props) => <MaterialIcons {...props} name="analytics" size={24} color="#4A90E2" />}
+              description="TASK AI-powered productivity analysis"
+              left={(props) => <MaterialIcons {...props} name="psychology" size={24} color="#8B5CF6" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => navigation.navigate('AIInsights')}
             />
-            
             <Divider />
-            
+            <List.Item
+              title="Grade Forecast"
+              description="AI-predicted grades for your courses"
+              left={(props) => <MaterialIcons {...props} name="school" size={24} color="#059669" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('GradeForecast')}
+            />
+            <Divider />
+            <List.Item
+              title="Analytics & Reports"
+              description="Task completion reports and trends"
+              left={(props) => <MaterialIcons {...props} name="analytics" size={24} color="#F59E0B" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('Analytics')}
+            />
+            <Divider />
             <List.Item
               title="Task Management"
               description="View and manage all your tasks"
-              left={(props) => <MaterialIcons {...props} name="task-alt" size={24} color="#059669" />}
+              left={(props) => <MaterialIcons {...props} name="task-alt" size={24} color="#4A90E2" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => navigation.navigate('TaskList')}
             />
-            
             <Divider />
-            
             <List.Item
               title="Kanban Board"
               description="Visual task management with drag and drop"
-              left={(props) => <MaterialIcons {...props} name="view-column" size={24} color="#8B5CF6" />}
+              left={(props) => <MaterialIcons {...props} name="view-column" size={24} color="#4A90E2" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
               onPress={() => navigation.navigate('KanbanBoard')}
             />
@@ -239,48 +251,26 @@ export default function ProfileScreen({ navigation }: Props) {
           <List.Section>
             <List.Item
               title="Account Settings"
-              description="Update your profile information"
-              left={(props) => <MaterialIcons {...props} name="account-circle" size={24} color="#6B7280" />}
+              description="Update your profile and notification preferences"
+              left={(props) => <MaterialIcons {...props} name="account-circle" size={24} color="#6366F1" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
-              onPress={() => {
-                showInfo('Coming Soon', 'Account settings will be available in a future update.');
-              }}
+              onPress={() => navigation.navigate('AccountSettings')}
             />
-            
             <Divider />
-            
             <List.Item
-              title="Notifications"
-              description="Manage your notification preferences"
-              left={(props) => <MaterialIcons {...props} name="notifications" size={24} color="#6B7280" />}
+              title="Data & Privacy"
+              description="Manage your data and privacy settings"
+              left={(props) => <MaterialIcons {...props} name="security" size={24} color="#374151" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
-              onPress={() => {
-                showInfo('Coming Soon', 'Notification settings will be available in a future update.');
-              }}
+              onPress={() => navigation.navigate('DataPrivacy')}
             />
-            
             <Divider />
-            
             <List.Item
               title="Theme"
               description="Choose your preferred theme"
               left={(props) => <MaterialIcons {...props} name="palette" size={24} color="#6B7280" />}
               right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
-              onPress={() => {
-                showInfo('Coming Soon', 'Theme settings will be available in a future update.');
-              }}
-            />
-            
-            <Divider />
-            
-            <List.Item
-              title="Backup & Sync"
-              description="Manage your data backup"
-              left={(props) => <MaterialIcons {...props} name="cloud-sync" size={24} color="#6B7280" />}
-              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
-              onPress={() => {
-                showInfo('Coming Soon', 'Backup & sync will be available in a future update.');
-              }}
+              onPress={() => showInfo('Coming Soon', 'Theme settings will be available in a future update.')}
             />
           </List.Section>
         </Card.Content>

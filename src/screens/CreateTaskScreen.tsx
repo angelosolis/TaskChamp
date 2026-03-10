@@ -99,9 +99,9 @@ export default function CreateTaskScreen({ navigation }: Props) {
       // Show success message
       setSuccessVisible(true);
       
-      // Navigate to tasks after a short delay
+      // Navigate to task list after a short delay
       setTimeout(() => {
-        navigation.navigate('TaskList');
+        navigation.navigate('MainTabs', { screen: 'Dashboard' });
       }, 1000);
     } catch (error) {
       // Error is handled by Redux

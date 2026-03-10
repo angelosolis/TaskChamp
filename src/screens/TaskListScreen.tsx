@@ -272,7 +272,7 @@ export default function TaskListScreen({ navigation }: Props) {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('Create' as any)}
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Create' })}
       />
     </View>
   );
