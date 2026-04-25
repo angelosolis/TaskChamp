@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Dimensions, Pressable } from 'react-native';
 import { Text, Card, Button, Surface, ProgressBar, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -327,54 +327,30 @@ export default function DashboardScreen({ navigation }: Props) {
 
             {/* Secondary Actions */}
             <View style={styles.secondaryActionsGrid}>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.navigate('KanbanBoard')}
-                style={[styles.secondaryActionButton, styles.kanbanButton]}
-                contentStyle={styles.secondaryActionContent}
-                labelStyle={styles.secondaryActionLabel}
-                icon={({ size, color }) => (
-                  <MaterialCommunityIcons name="view-column" size={18} color="#F59E0B" />
-                )}
-              >
-                Kanban Board
-              </Button>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.navigate('TaskList')}
-                style={[styles.secondaryActionButton, styles.listButton]}
-                contentStyle={styles.secondaryActionContent}
-                labelStyle={styles.secondaryActionLabel}
-                icon={({ size, color }) => (
-                  <MaterialCommunityIcons name="format-list-bulleted" size={18} color="#10B981" />
-                )}
-              >
-                All Tasks
-              </Button>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.navigate('AIInsights')}
-                style={[styles.secondaryActionButton, styles.aiButton]}
-                contentStyle={styles.secondaryActionContent}
-                labelStyle={styles.secondaryActionLabel}
-                icon={({ size, color }) => (
-                  <MaterialCommunityIcons name="brain" size={18} color="#8B5CF6" />
-                )}
-              >
-                AI Insights
-              </Button>
-              <Button
-                mode="outlined"
-                onPress={() => navigation.navigate('MainTabs', { screen: 'Academic' })}
-                style={[styles.secondaryActionButton, styles.academicButton]}
-                contentStyle={styles.secondaryActionContent}
-                labelStyle={styles.secondaryActionLabel}
-                icon={({ size, color }) => (
-                  <MaterialCommunityIcons name="school" size={18} color="#667eea" />
-                )}
-              >
-                Academic Hub
-              </Button>
+              {[
+                { key: 'kanban', label: 'Kanban Board', icon: 'view-column', color: '#F59E0B', bg: '#FFFBEB', onPress: () => navigation.navigate('KanbanBoard') },
+                { key: 'list', label: 'All Tasks', icon: 'format-list-checks', color: '#10B981', bg: '#ECFDF5', onPress: () => navigation.navigate('TaskList') },
+                { key: 'ai', label: 'AI Insights', icon: 'head-lightbulb-outline', color: '#8B5CF6', bg: '#F5F3FF', onPress: () => navigation.navigate('AIInsights') },
+                { key: 'academic', label: 'Academic Hub', icon: 'school', color: '#667eea', bg: '#EEF2FF', onPress: () => navigation.navigate('MainTabs', { screen: 'Academic' }) },
+              ].map((action) => (
+                <Pressable
+                  key={action.key}
+                  onPress={action.onPress}
+                  android_ripple={{ color: action.bg }}
+                  style={({ pressed }) => [
+                    styles.actionCard,
+                    { borderColor: action.bg },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <View style={[styles.actionIconWrap, { backgroundColor: action.bg }]}>
+                    <MaterialCommunityIcons name={action.icon as any} size={26} color={action.color} />
+                  </View>
+                  <Text style={styles.actionCardLabel} numberOfLines={1}>
+                    {action.label}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </Card.Content>
         </Card>
@@ -643,39 +619,37 @@ const styles = StyleSheet.create({
   secondaryActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginTop: 8,
   },
-  secondaryActionButton: {
+  actionCard: {
     flex: 1,
-    minWidth: '30%',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    elevation: 1,
-  },
-  secondaryActionContent: {
-    height: 44,
+    minWidth: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
     paddingHorizontal: 12,
+    gap: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  secondaryActionLabel: {
+  actionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionCardLabel: {
+    flex: 1,
     fontSize: 13,
     fontWeight: '600',
-    marginLeft: 6,
-  },
-  kanbanButton: {
-    borderColor: '#FEF3C7',
-    backgroundColor: '#FFFBEB',
-  },
-  listButton: {
-    borderColor: '#D1FAE5',
-    backgroundColor: '#ECFDF5',
-  },
-  aiButton: {
-    borderColor: '#EDE9FE',
-    backgroundColor: '#F5F3FF',
-  },
-  academicButton: {
-    borderColor: '#E0E7FF',
-    backgroundColor: '#EEF2FF',
+    color: '#1F2937',
   },
 });

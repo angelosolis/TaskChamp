@@ -270,16 +270,10 @@ export default function AcademicScreen({ navigation }: Props) {
             <Text variant="titleLarge" style={styles.sectionTitle}>
               🎓 Course Progress
             </Text>
-            <Button 
-              mode="text" 
+            <Button
+              mode="text"
               compact
-              onPress={() => {
-                const newCourse = {
-                  code: 'NEW101',
-                  name: 'New Course',
-                };
-                dispatch(addCourse(newCourse));
-              }}
+              onPress={() => navigation.navigate('ManageCourses')}
             >
               + Course
             </Button>

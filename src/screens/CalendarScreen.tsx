@@ -225,11 +225,19 @@ export default function CalendarScreen({ navigation }: Props) {
                     <IconButton icon="delete-outline" size={16} iconColor="#9CA3AF" onPress={() => handleDelete(event.id, event.title)} style={styles.deleteBtn} />
                   </View>
                   {event.startTime && (
-                    <Text variant="bodySmall" style={styles.eventTime}>
-                      🕐 {event.startTime}{event.endTime ? ` - ${event.endTime}` : ''}
-                    </Text>
+                    <View style={styles.eventMetaRow}>
+                      <MaterialCommunityIcons name="clock-outline" size={14} color="#6B7280" />
+                      <Text variant="bodySmall" style={styles.eventTime}>
+                        {event.startTime}{event.endTime ? ` - ${event.endTime}` : ''}
+                      </Text>
+                    </View>
                   )}
-                  {event.location && <Text variant="bodySmall" style={styles.eventLocation}>📍 {event.location}</Text>}
+                  {event.location && (
+                    <View style={styles.eventMetaRow}>
+                      <MaterialCommunityIcons name="map-marker-outline" size={14} color="#6B7280" />
+                      <Text variant="bodySmall" style={styles.eventLocation}>{event.location}</Text>
+                    </View>
+                  )}
                 </Card.Content>
               </Card>
             ))}
@@ -414,9 +422,10 @@ const styles = StyleSheet.create({
   taskCard: { marginBottom: 8, elevation: 1, borderRadius: 8, borderLeftWidth: 4 },
   eventContent: { padding: 4 },
   eventHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   eventTitle: { flex: 1, color: '#2E3A59', fontWeight: '500' },
   completedTask: { textDecorationLine: 'line-through', opacity: 0.7 },
-  priorityChip: { height: 24 },
+  priorityChip: { alignSelf: 'center' },
   deleteBtn: { margin: 0 },
   eventTime: { color: '#6B7280', marginTop: 4, marginLeft: 28, fontSize: 12 },
   eventLocation: { color: '#6B7280', marginTop: 2, marginLeft: 28, fontSize: 12 },

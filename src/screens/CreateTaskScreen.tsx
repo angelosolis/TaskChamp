@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, Linking } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { Text, TextInput, Button, Card, Snackbar, SegmentedButtons, Surface, Menu, Chip, Divider, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -11,7 +12,7 @@ import ModernHeader from '../components/ModernHeader';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createTask } from '../store/slices/taskSlice';
-import { initializeDefaultCourses, addCourse } from '../store/slices/academicSlice';
+import { initializeDefaultCourses } from '../store/slices/academicSlice';
 import { MainTabParamList, MainStackParamList, Course, AcademicResource } from '../types';
 import { inAppAlertService } from '../services/inAppAlertService';
 import { useNotification } from '../components/NotificationProvider';
@@ -45,6 +46,8 @@ export default function CreateTaskScreen({ navigation }: Props) {
   const [newResourceTitle, setNewResourceTitle] = useState('');
   const [newResourceUrl, setNewResourceUrl] = useState('');
   const [newResourceType, setNewResourceType] = useState<'link' | 'file' | 'note' | 'video' | 'document'>('link');
+  const [pickedFileName, setPickedFileName] = useState<string>('');
+  const [pickedFileSize, setPickedFileSize] = useState<number | null>(null);
 
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.tasks);
@@ -136,33 +139,65 @@ export default function CreateTaskScreen({ navigation }: Props) {
     setNewResourceTitle('');
     setNewResourceUrl('');
     setNewResourceType('link');
+    setPickedFileName('');
+    setPickedFileSize(null);
     setShowResourceDialog(false);
+  };
+
+  const handlePickFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: newResourceType === 'video' ? 'video/*' : '*/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset) return;
+
+      setNewResourceUrl(asset.uri);
+      setPickedFileName(asset.name);
+      setPickedFileSize(asset.size ?? null);
+      if (!newResourceTitle.trim()) {
+        setNewResourceTitle(asset.name);
+      }
+    } catch (err) {
+      showError('Could not pick file', 'Please try again.');
+    }
+  };
+
+  const handleOpenResource = async (resource: AcademicResource) => {
+    if (!resource.url) return;
+    if (resource.type === 'link') {
+      try { await Linking.openURL(resource.url); } catch { Alert.alert('Cannot open link', resource.url); }
+      return;
+    }
+    if (resource.type === 'document' || resource.type === 'video' || resource.type === 'file') {
+      try {
+        const supported = await Linking.canOpenURL(resource.url);
+        if (supported) {
+          await Linking.openURL(resource.url);
+        } else {
+          Alert.alert('No app available', 'Install an app that can open this file type.');
+        }
+      } catch {
+        Alert.alert('Cannot open file', resource.url);
+      }
+      return;
+    }
+    Alert.alert(resource.title, resource.url);
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   const handleRemoveResource = (resourceId: string) => {
     setResources(resources.filter(r => r.id !== resourceId));
-  };
-
-  const handleQuickAddCourse = () => {
-    Alert.prompt(
-      'Add New Course',
-      'Enter course code (e.g., CS301)',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (courseCode) => {
-            if (courseCode?.trim()) {
-              const newCourse = {
-                code: courseCode.trim().toUpperCase(),
-                name: `${courseCode.trim().toUpperCase()} Course`,
-              };
-              dispatch(addCourse(newCourse));
-            }
-          }
-        }
-      ]
-    );
   };
 
   const isFormValid = () => {
@@ -330,9 +365,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
 
               {/* Course Selection */}
               <View style={styles.academicField}>
-                <Text variant="titleSmall" style={styles.fieldLabel}>
-                  📚 Course
-                </Text>
+                <View style={styles.fieldLabelRow}>
+                  <MaterialCommunityIcons name="book-open-variant" size={16} color="#374151" />
+                  <Text variant="titleSmall" style={styles.fieldLabelText}>
+                    Course
+                  </Text>
+                </View>
                 <Menu
                   visible={showCourseMenu}
                   onDismiss={() => setShowCourseMenu(false)}
@@ -381,7 +419,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
                   <Menu.Item
                     onPress={() => {
                       setShowCourseMenu(false);
-                      handleQuickAddCourse();
+                      navigation.navigate('ManageCourses');
                     }}
                     title="Add New Course"
                     leadingIcon="plus"
@@ -401,9 +439,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
 
               {/* Task Type */}
               <View style={styles.academicField}>
-                <Text variant="titleSmall" style={styles.fieldLabel}>
-                  📝 Task Type
-                </Text>
+                <View style={styles.fieldLabelRow}>
+                  <MaterialCommunityIcons name="clipboard-text-outline" size={16} color="#374151" />
+                  <Text variant="titleSmall" style={styles.fieldLabelText}>
+                    Task Type
+                  </Text>
+                </View>
                 <View style={styles.taskTypeGrid}>
                   {taskTypeOptions.map((option) => (
                     <Surface 
@@ -439,9 +480,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
               {/* Time and Difficulty Row */}
               <View style={styles.academicRow}>
                 <View style={styles.academicFieldHalf}>
-                  <Text variant="titleSmall" style={styles.fieldLabel}>
-                    ⏱️ Est. Time
-                  </Text>
+                  <View style={styles.fieldLabelRow}>
+                    <MaterialCommunityIcons name="clock-outline" size={16} color="#374151" />
+                    <Text variant="titleSmall" style={styles.fieldLabelText}>
+                      Est. Time
+                    </Text>
+                  </View>
                   <Surface style={styles.inputSurface} elevation={1}>
                     <TextInput
                       value={estimatedTime}
@@ -457,9 +501,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
                 </View>
 
                 <View style={styles.academicFieldHalf}>
-                  <Text variant="titleSmall" style={styles.fieldLabel}>
-                    🎯 Difficulty
-                  </Text>
+                  <View style={styles.fieldLabelRow}>
+                    <MaterialCommunityIcons name="target" size={16} color="#374151" />
+                    <Text variant="titleSmall" style={styles.fieldLabelText}>
+                      Difficulty
+                    </Text>
+                  </View>
                   <View style={styles.difficultyContainer}>
                     {['easy', 'medium', 'hard'].map((level) => (
                       <Surface
@@ -472,8 +519,10 @@ export default function CreateTaskScreen({ navigation }: Props) {
                       >
                         <Button
                           mode="text"
+                          compact
                           onPress={() => setDifficulty(level as any)}
                           style={styles.difficultyButton}
+                          contentStyle={styles.difficultyButtonContent}
                           labelStyle={[
                             styles.difficultyLabel,
                             difficulty === level && styles.selectedDifficultyLabel
@@ -490,9 +539,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
               {/* Grade Weight (conditional) */}
               {selectedCourseId && (
                 <View style={styles.academicField}>
-                  <Text variant="titleSmall" style={styles.fieldLabel}>
-                    📊 Grade Weight
-                  </Text>
+                  <View style={styles.fieldLabelRow}>
+                    <MaterialCommunityIcons name="chart-bar" size={16} color="#374151" />
+                    <Text variant="titleSmall" style={styles.fieldLabelText}>
+                      Grade Weight
+                    </Text>
+                  </View>
                   <Surface style={styles.inputSurface} elevation={1}>
                     <TextInput
                       value={gradeWeight}
@@ -511,9 +563,12 @@ export default function CreateTaskScreen({ navigation }: Props) {
               {/* Resources */}
               <View style={styles.academicField}>
                 <View style={styles.resourcesHeader}>
-                  <Text variant="titleSmall" style={styles.fieldLabel}>
-                    🔗 Resources
-                  </Text>
+                  <View style={styles.fieldLabelRow}>
+                    <MaterialCommunityIcons name="paperclip" size={16} color="#374151" />
+                    <Text variant="titleSmall" style={styles.fieldLabelText}>
+                      Resources
+                    </Text>
+                  </View>
                   <Button
                     mode="text"
                     compact
@@ -531,7 +586,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
                       <Surface key={resource.id} style={styles.resourceChipSurface} elevation={1}>
                         <Chip
                           mode="flat"
-                          onPress={() => resource.url && Alert.alert('Resource', resource.url)}
+                          onPress={() => handleOpenResource(resource)}
                           onClose={() => handleRemoveResource(resource.id)}
                           icon={
                             resource.type === 'link' ? 'link' :
@@ -686,28 +741,71 @@ export default function CreateTaskScreen({ navigation }: Props) {
                 />
 
                 {/* Resource Content */}
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  {newResourceType === 'link' ? 'URL' :
-                   newResourceType === 'note' ? 'Your Notes' :
-                   'Description'}
-                </Text>
-                <TextInput
-                  value={newResourceUrl}
-                  onChangeText={setNewResourceUrl}
-                  mode="outlined"
-                  placeholder={
-                    newResourceType === 'link' ? 'https://example.com/resource' :
-                    newResourceType === 'note' ? 'Write your notes here...' :
-                    'Brief description or file path...'
-                  }
-                  multiline={newResourceType === 'note'}
-                  numberOfLines={newResourceType === 'note' ? 4 : 1}
-                  style={styles.dialogInput}
-                  left={<TextInput.Icon 
-                    icon={newResourceType === 'link' ? 'web' : 
-                          newResourceType === 'note' ? 'pencil' : 'text-short'} 
-                  />}
-                />
+                {(newResourceType === 'document' || newResourceType === 'video') ? (
+                  <>
+                    <Text variant="titleMedium" style={styles.sectionTitle}>
+                      {newResourceType === 'video' ? 'Video File' : 'Document'}
+                    </Text>
+                    <Button
+                      mode="outlined"
+                      onPress={handlePickFile}
+                      icon={pickedFileName ? 'file-check' : 'file-upload'}
+                      style={styles.pickFileButton}
+                      contentStyle={styles.pickFileButtonContent}
+                    >
+                      {pickedFileName ? 'Replace File' : `Pick ${newResourceType === 'video' ? 'Video' : 'Document'}`}
+                    </Button>
+                    {pickedFileName ? (
+                      <Surface style={styles.pickedFileCard} elevation={1}>
+                        <MaterialCommunityIcons
+                          name={newResourceType === 'video' ? 'play-circle' : 'file-document'}
+                          size={22}
+                          color={newResourceType === 'video' ? '#F59E0B' : '#10B981'}
+                        />
+                        <View style={styles.pickedFileInfo}>
+                          <Text style={styles.pickedFileName} numberOfLines={1}>
+                            {pickedFileName}
+                          </Text>
+                          {pickedFileSize !== null && (
+                            <Text style={styles.pickedFileMeta}>{formatFileSize(pickedFileSize)}</Text>
+                          )}
+                        </View>
+                        <IconButton
+                          icon="close"
+                          size={16}
+                          onPress={() => {
+                            setPickedFileName('');
+                            setPickedFileSize(null);
+                            setNewResourceUrl('');
+                          }}
+                        />
+                      </Surface>
+                    ) : (
+                      <Text style={styles.pickFileHint}>
+                        Files are copied into the app's cache so you can reopen them later.
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Text variant="titleMedium" style={styles.sectionTitle}>
+                      {newResourceType === 'link' ? 'URL' : 'Your Notes'}
+                    </Text>
+                    <TextInput
+                      value={newResourceUrl}
+                      onChangeText={setNewResourceUrl}
+                      mode="outlined"
+                      placeholder={
+                        newResourceType === 'link' ? 'https://example.com/resource' :
+                        'Write your notes here...'
+                      }
+                      multiline={newResourceType === 'note'}
+                      numberOfLines={newResourceType === 'note' ? 4 : 1}
+                      style={styles.dialogInput}
+                      left={<TextInput.Icon icon={newResourceType === 'link' ? 'web' : 'pencil'} />}
+                    />
+                  </>
+                )}
               </View>
 
               {/* Buttons */}
@@ -728,7 +826,10 @@ export default function CreateTaskScreen({ navigation }: Props) {
                     style={styles.addButton}
                     contentStyle={styles.buttonContent}
                     labelStyle={styles.addLabel}
-                    disabled={!newResourceTitle.trim()}
+                    disabled={
+                      !newResourceTitle.trim() ||
+                      ((newResourceType === 'document' || newResourceType === 'video') && !newResourceUrl)
+                    }
                     buttonColor="#667eea"
                     icon="plus"
                   >
@@ -877,6 +978,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  fieldLabelText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
 
   // Course Selection
   courseSelector: {
@@ -994,12 +1105,18 @@ const styles = StyleSheet.create({
     height: 44,
     margin: 0,
     justifyContent: 'center',
+    minWidth: 0,
+  },
+  difficultyButtonContent: {
+    paddingHorizontal: 0,
+    minWidth: 0,
   },
   difficultyLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
     textAlign: 'center',
+    marginHorizontal: 0,
   },
   selectedDifficultyLabel: {
     color: '#FFFFFF',
@@ -1174,6 +1291,40 @@ const styles = StyleSheet.create({
   dialogInput: {
     backgroundColor: '#FFFFFF',
     marginBottom: 4,
+  },
+  pickFileButton: {
+    borderRadius: 12,
+    borderColor: '#D1D5DB',
+    marginBottom: 8,
+  },
+  pickFileButtonContent: {
+    height: 48,
+  },
+  pickedFileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  pickedFileInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pickedFileName: {
+    color: '#1F2937',
+    fontWeight: '600',
+  },
+  pickedFileMeta: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  pickFileHint: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    marginTop: 4,
   },
 
   // Footer with Actions

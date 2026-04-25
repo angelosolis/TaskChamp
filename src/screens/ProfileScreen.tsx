@@ -199,6 +199,14 @@ export default function ProfileScreen({ navigation }: Props) {
           
           <List.Section>
             <List.Item
+              title="Manage Courses"
+              description="Add, edit, or remove your courses"
+              left={(props) => <MaterialIcons {...props} name="menu-book" size={24} color="#6366F1" />}
+              right={(props) => <MaterialIcons {...props} name="chevron-right" size={24} color="#6B7280" />}
+              onPress={() => navigation.navigate('ManageCourses')}
+            />
+            <Divider />
+            <List.Item
               title="AI Insights"
               description="TASK AI-powered productivity analysis"
               left={(props) => <MaterialIcons {...props} name="psychology" size={24} color="#8B5CF6" />}

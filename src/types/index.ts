@@ -145,4 +145,5 @@ export type MainStackParamList = {
   Analytics: undefined;
   AccountSettings: undefined;
   DataPrivacy: undefined;
+  ManageCourses: undefined;
 };

@@ -20,10 +20,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.TaskChamp"
+      "package": "com.anjuroxd.taskchamp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9c6e4e1c-4a0d-4aa0-8242-496843e62718"
+      }
+    },
+    "owner": "anjuroxd",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

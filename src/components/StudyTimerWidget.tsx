@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, Button, ProgressBar, IconButton } from 'react-native-paper';
+import { Card, Text, Button, ProgressBar, IconButton, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { studyTimerService, TimerState } from '../services/studyTimerService';
 
@@ -18,6 +18,24 @@ export default function StudyTimerWidget({
   compact = false 
 }: StudyTimerWidgetProps) {
   const [timerState, setTimerState] = useState<TimerState>(studyTimerService.getState());
+  const [customMinutes, setCustomMinutes] = useState('');
+
+  const DURATION_PRESETS = [15, 25, 45, 60];
+
+  const applyDuration = (minutes: number) => {
+    if (timerState.isActive || !Number.isFinite(minutes) || minutes <= 0) return;
+    studyTimerService.setTimerDuration(Math.min(minutes, 180));
+  };
+
+  const applyCustomDuration = () => {
+    const parsed = parseInt(customMinutes, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      applyDuration(parsed);
+      setCustomMinutes('');
+    }
+  };
+
+  const currentMinutes = Math.round(timerState.initialTime / 60);
 
   useEffect(() => {
     const unsubscribe = studyTimerService.subscribe((state) => {
@@ -136,11 +154,59 @@ export default function StudyTimerWidget({
         </View>
 
         {timerState.isActive && (
-          <ProgressBar 
-            progress={progress} 
-            color={getSessionColor()} 
+          <ProgressBar
+            progress={progress}
+            color={getSessionColor()}
             style={styles.progressBar}
           />
+        )}
+
+        {!timerState.isActive && timerState.sessionType === 'focus' && (
+          <View style={styles.durationPicker}>
+            <Text variant="bodySmall" style={styles.durationLabel}>Duration</Text>
+            <View style={styles.presetRow}>
+              {DURATION_PRESETS.map((mins) => {
+                const selected = currentMinutes === mins;
+                return (
+                  <Button
+                    key={mins}
+                    mode={selected ? 'contained' : 'outlined'}
+                    compact
+                    onPress={() => applyDuration(mins)}
+                    style={styles.presetButton}
+                    contentStyle={styles.presetButtonContent}
+                    labelStyle={styles.presetLabel}
+                    buttonColor={selected ? getSessionColor() : undefined}
+                    textColor={selected ? '#FFFFFF' : '#374151'}
+                  >
+                    {mins}
+                  </Button>
+                );
+              })}
+            </View>
+            <View style={styles.customRow}>
+              <TextInput
+                value={customMinutes}
+                onChangeText={setCustomMinutes}
+                mode="outlined"
+                placeholder="Custom"
+                keyboardType="numeric"
+                dense
+                style={styles.customInput}
+                right={<TextInput.Affix text="min" />}
+                onSubmitEditing={applyCustomDuration}
+              />
+              <Button
+                mode="outlined"
+                compact
+                onPress={applyCustomDuration}
+                disabled={!customMinutes.trim()}
+                style={styles.customApply}
+              >
+                Set
+              </Button>
+            </View>
+          </View>
         )}
 
         <View style={styles.controls}>
@@ -234,6 +300,45 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginBottom: 16,
+  },
+  durationPicker: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  durationLabel: {
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  presetRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  presetButton: {
+    flex: 1,
+    borderRadius: 8,
+    minWidth: 0,
+  },
+  presetButtonContent: {
+    height: 36,
+    paddingHorizontal: 0,
+  },
+  presetLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginHorizontal: 0,
+  },
+  customRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+  },
+  customApply: {
+    borderRadius: 8,
   },
   controls: {
     flexDirection: 'row',

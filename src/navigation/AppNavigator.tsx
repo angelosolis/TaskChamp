@@ -29,6 +29,7 @@ import AnalyticsScreen from '../screens/AnalyticsScreen';
 import PasswordResetScreen from '../screens/PasswordResetScreen';
 import AccountSettingsScreen from '../screens/AccountSettingsScreen';
 import DataPrivacyScreen from '../screens/DataPrivacyScreen';
+import ManageCoursesScreen from '../screens/ManageCoursesScreen';
 
 import { RootStackParamList, MainTabParamList, MainStackParamList } from '../types';
 
@@ -166,6 +167,7 @@ function MainTabNavigator() {
       <MainStack.Screen name="Analytics" component={AnalyticsScreen} />
       <MainStack.Screen name="AccountSettings" component={AccountSettingsScreen} />
       <MainStack.Screen name="DataPrivacy" component={DataPrivacyScreen} />
+      <MainStack.Screen name="ManageCourses" component={ManageCoursesScreen} />
     </MainStack.Navigator>
   );
 }

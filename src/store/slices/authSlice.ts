@@ -2,40 +2,73 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthState, User } from '../../types';
 
-// Mock API calls - replace with real API later
+const CREDENTIALS_KEY = 'user_credentials';
+
+type CredentialEntry = { user: User; password: string };
+type CredentialsMap = Record<string, CredentialEntry>;
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+async function readCredentials(): Promise<CredentialsMap> {
+  const raw = await AsyncStorage.getItem(CREDENTIALS_KEY);
+  return raw ? (JSON.parse(raw) as CredentialsMap) : {};
+}
+
+async function writeCredentials(map: CredentialsMap): Promise<void> {
+  await AsyncStorage.setItem(CREDENTIALS_KEY, JSON.stringify(map));
+}
+
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful login
-    if (email && password) {
-      const user: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=2E3A59&color=fff`
-      };
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      return user;
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const cleanEmail = normalizeEmail(email);
+    if (!cleanEmail || !password) {
+      throw new Error('Email and password are required.');
     }
-    throw new Error('Invalid credentials');
+
+    const credentials = await readCredentials();
+    const entry = credentials[cleanEmail];
+
+    if (!entry) {
+      throw new Error('No account found for this email.');
+    }
+    if (entry.password !== password) {
+      throw new Error('Incorrect password.');
+    }
+
+    await AsyncStorage.setItem('user', JSON.stringify(entry.user));
+    return entry.user;
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/register',
   async ({ email, password, name }: { email: string; password: string; name: string }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const cleanEmail = normalizeEmail(email);
+    const cleanName = name.trim();
+
+    if (!cleanEmail.includes('@')) throw new Error('Please enter a valid email.');
+    if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+    if (!cleanName) throw new Error('Name is required.');
+
+    const credentials = await readCredentials();
+    if (credentials[cleanEmail]) {
+      throw new Error('An account with this email already exists.');
+    }
+
     const user: User = {
       id: Date.now().toString(),
-      email,
-      name,
-      avatar: `https://ui-avatars.com/api/?name=${name}&background=2E3A59&color=fff`
+      email: cleanEmail,
+      name: cleanName,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=2E3A59&color=fff`,
     };
+
+    credentials[cleanEmail] = { user, password };
+    await writeCredentials(credentials);
     await AsyncStorage.setItem('user', JSON.stringify(user));
     return user;
   }
