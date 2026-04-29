@@ -8,7 +8,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { initializeDefaultCourses, addCourse } from '../store/slices/academicSlice';
+import { loadCourses } from '../store/slices/academicSlice';
 import StudyTimerWidget from '../components/StudyTimerWidget';
 import ModernHeader from '../components/ModernHeader';
 import { studyTimerService } from '../services/studyTimerService';
@@ -25,15 +25,10 @@ export default function AcademicScreen({ navigation }: Props) {
   const { courses } = useAppSelector((state) => state.academic);
   const [studyStats, setStudyStats] = useState<any>(null);
 
-  // Initialize courses and load study stats
   useEffect(() => {
-    if (courses.length === 0) {
-      dispatch(initializeDefaultCourses());
-    }
-    
-    // Load study statistics
+    dispatch(loadCourses());
     studyTimerService.getStudyStats(7).then(setStudyStats);
-  }, [dispatch, courses.length]);
+  }, [dispatch]);
 
   // Academic Statistics
   const getAcademicStats = () => {

@@ -6,11 +6,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppState } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { loadUser } from '../store/slices/authSlice';
+import { loadUser, setUserFromSession } from '../store/slices/authSlice';
 import { loadTasks } from '../store/slices/taskSlice';
 import { loadEvents } from '../store/slices/calendarSlice';
 import { inAppAlertService } from '../services/inAppAlertService';
 import { useNotification } from '../components/NotificationProvider';
+import { supabase } from '../services/supabase';
+import AdminNavigator from './AdminNavigator';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -173,18 +175,36 @@ function MainTabNavigator() {
 }
 
 export default function AppNavigator() {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     dispatch(loadUser());
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        dispatch(setUserFromSession(null));
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        dispatch(loadUser());
+      }
+    });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
   }, [dispatch]);
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+          isAdmin ? (
+            <RootStack.Screen name="MainTabs" component={AdminNavigator} />
+          ) : (
+            <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+          )
         ) : (
           <>
             <RootStack.Screen name="Login" component={LoginScreen} />

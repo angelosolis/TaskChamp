@@ -12,7 +12,7 @@ import ModernHeader from '../components/ModernHeader';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createTask } from '../store/slices/taskSlice';
-import { initializeDefaultCourses } from '../store/slices/academicSlice';
+import { loadCourses } from '../store/slices/academicSlice';
 import { MainTabParamList, MainStackParamList, Course, AcademicResource } from '../types';
 import { inAppAlertService } from '../services/inAppAlertService';
 import { useNotification } from '../components/NotificationProvider';
@@ -24,6 +24,7 @@ type Props = CompositeScreenProps<
 >;
 
 export default function CreateTaskScreen({ navigation }: Props) {
+  const [isAcademic, setIsAcademic] = useState(true);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -54,12 +55,9 @@ export default function CreateTaskScreen({ navigation }: Props) {
   const { courses } = useAppSelector((state) => state.academic);
   const { showInfo, showError } = useNotification();
 
-  // Initialize default courses if none exist
   useEffect(() => {
-    if (courses.length === 0) {
-      dispatch(initializeDefaultCourses());
-    }
-  }, [dispatch, courses.length]);
+    dispatch(loadCourses());
+  }, [dispatch]);
 
   const handleCreateTask = async () => {
     if (!title.trim()) {
@@ -74,13 +72,14 @@ export default function CreateTaskScreen({ navigation }: Props) {
         category: category.trim() || undefined,
         dueDate: dueDate?.toISOString(),
         completed: false,
-        
-        // Academic fields
-        courseId: selectedCourseId || undefined,
-        taskType,
+
+        isAcademic,
+        // Academic-only fields are blanked out for personal tasks
+        courseId: isAcademic ? (selectedCourseId || undefined) : undefined,
+        taskType: isAcademic ? taskType : 'other',
         estimatedTime: estimatedTime ? parseInt(estimatedTime) : undefined,
         difficulty,
-        weight: gradeWeight ? parseFloat(gradeWeight) : undefined,
+        weight: isAcademic && gradeWeight ? parseFloat(gradeWeight) : undefined,
         resources: resources,
       };
 
@@ -351,7 +350,46 @@ export default function CreateTaskScreen({ navigation }: Props) {
               )}
             </View>
 
-            {/* Academic Section */}
+            {/* Academic / Personal toggle */}
+            <View style={styles.toggleRow}>
+              <Surface
+                style={[styles.toggleOption, isAcademic && styles.toggleOptionActive]}
+                elevation={isAcademic ? 2 : 0}
+              >
+                <Button
+                  mode="text"
+                  onPress={() => setIsAcademic(true)}
+                  style={styles.toggleButton}
+                  contentStyle={styles.toggleContent}
+                  labelStyle={[styles.toggleLabel, isAcademic && styles.toggleLabelActive]}
+                  icon={({ color }) => (
+                    <MaterialCommunityIcons name="school" size={18} color={isAcademic ? '#FFFFFF' : '#6B7280'} />
+                  )}
+                >
+                  Academic
+                </Button>
+              </Surface>
+              <Surface
+                style={[styles.toggleOption, !isAcademic && styles.toggleOptionActive]}
+                elevation={!isAcademic ? 2 : 0}
+              >
+                <Button
+                  mode="text"
+                  onPress={() => setIsAcademic(false)}
+                  style={styles.toggleButton}
+                  contentStyle={styles.toggleContent}
+                  labelStyle={[styles.toggleLabel, !isAcademic && styles.toggleLabelActive]}
+                  icon={({ color }) => (
+                    <MaterialCommunityIcons name="run" size={18} color={!isAcademic ? '#FFFFFF' : '#6B7280'} />
+                  )}
+                >
+                  Personal
+                </Button>
+              </Surface>
+            </View>
+
+            {/* Academic Section — only when isAcademic */}
+            {isAcademic && (
             <View style={styles.academicSection}>
               <Surface style={styles.academicHeader} elevation={1}>
                 <MaterialCommunityIcons name="school" size={24} color="#667eea" />
@@ -611,10 +649,11 @@ export default function CreateTaskScreen({ navigation }: Props) {
                 )}
               </View>
             </View>
+            )}
 
             <Divider style={styles.divider} />
 
-            {/* Study Timer */}
+            {/* Study Timer (works for both academic and personal tasks) */}
             <View style={styles.section}>
               <Text variant="titleSmall" style={styles.sectionTitle}>
                 📚 Want to start studying?
@@ -949,6 +988,39 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
 
+  // Academic / Personal toggle
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  toggleOption: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  toggleOptionActive: {
+    backgroundColor: '#667eea',
+  },
+  toggleButton: {
+    width: '100%',
+    margin: 0,
+  },
+  toggleContent: {
+    height: 44,
+    flexDirection: 'row',
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginHorizontal: 6,
+  },
+  toggleLabelActive: {
+    color: '#FFFFFF',
+  },
   // Academic Section Styles
   academicSection: {
     marginTop: 24,
@@ -1241,12 +1313,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    color: '#2E3A59',
-    fontWeight: '600',
-    marginTop: 16,
     marginBottom: 12,
   },
 

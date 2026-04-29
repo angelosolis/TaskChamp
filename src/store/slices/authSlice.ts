@@ -1,99 +1,146 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthState, User } from '../../types';
+import { supabase } from '../../services/supabase';
+import { ProfileRow } from '../../types/database';
 
-const CREDENTIALS_KEY = 'user_credentials';
+const profileToUser = (profile: ProfileRow): User => ({
+  id: profile.id,
+  email: profile.email,
+  name: profile.name,
+  avatar:
+    profile.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=2E3A59&color=fff`,
+  course: profile.course || undefined,
+  educationLevel: profile.education_level || undefined,
+  role: profile.role,
+});
 
-type CredentialEntry = { user: User; password: string };
-type CredentialsMap = Record<string, CredentialEntry>;
-
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
-async function readCredentials(): Promise<CredentialsMap> {
-  const raw = await AsyncStorage.getItem(CREDENTIALS_KEY);
-  return raw ? (JSON.parse(raw) as CredentialsMap) : {};
-}
-
-async function writeCredentials(map: CredentialsMap): Promise<void> {
-  await AsyncStorage.setItem(CREDENTIALS_KEY, JSON.stringify(map));
+async function fetchProfile(userId: string): Promise<User> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error || !data) throw new Error(error?.message || 'Profile not found.');
+  return profileToUser(data as ProfileRow);
 }
 
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }) => {
-    await new Promise(resolve => setTimeout(resolve, 600));
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) throw new Error('Email and password are required.');
 
-    const cleanEmail = normalizeEmail(email);
-    if (!cleanEmail || !password) {
-      throw new Error('Email and password are required.');
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+    if (error) throw new Error(error.message);
+    if (!data.user) throw new Error('Login failed.');
 
-    const credentials = await readCredentials();
-    const entry = credentials[cleanEmail];
-
-    if (!entry) {
-      throw new Error('No account found for this email.');
-    }
-    if (entry.password !== password) {
-      throw new Error('Incorrect password.');
-    }
-
-    await AsyncStorage.setItem('user', JSON.stringify(entry.user));
-    return entry.user;
+    return await fetchProfile(data.user.id);
   }
 );
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async ({ email, password, name }: { email: string; password: string; name: string }) => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    const cleanEmail = normalizeEmail(email);
+  async ({
+    email,
+    password,
+    name,
+    course,
+    educationLevel,
+  }: {
+    email: string;
+    password: string;
+    name: string;
+    course?: string;
+    educationLevel?: string;
+  }) => {
+    const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
     if (!cleanEmail.includes('@')) throw new Error('Please enter a valid email.');
     if (password.length < 6) throw new Error('Password must be at least 6 characters.');
     if (!cleanName) throw new Error('Name is required.');
 
-    const credentials = await readCredentials();
-    if (credentials[cleanEmail]) {
-      throw new Error('An account with this email already exists.');
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: {
+          name: cleanName,
+          course: course || null,
+          education_level: educationLevel || null,
+          role: 'student',
+        },
+      },
+    });
+    if (error) throw new Error(error.message);
+    if (!data.user) throw new Error('Registration failed.');
+
+    // The on_auth_user_created trigger inserts the profile row.
+    // If email confirmation is OFF, session is active and we can fetch immediately.
+    // If ON, the user must confirm before signing in — handle either case.
+    if (data.session) {
+      try {
+        return await fetchProfile(data.user.id);
+      } catch {
+        // Profile may not be propagated yet; fall back to a synthetic user.
+      }
     }
 
-    const user: User = {
-      id: Date.now().toString(),
+    return {
+      id: data.user.id,
       email: cleanEmail,
       name: cleanName,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=2E3A59&color=fff`,
+      course,
+      educationLevel,
+      role: 'student' as const,
     };
-
-    credentials[cleanEmail] = { user, password };
-    await writeCredentials(credentials);
-    await AsyncStorage.setItem('user', JSON.stringify(user));
-    return user;
   }
 );
 
 export const loadUser = createAsyncThunk('auth/loadUser', async () => {
-  const userData = await AsyncStorage.getItem('user');
-  if (userData) {
-    return JSON.parse(userData) as User;
-  }
-  throw new Error('No user found');
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(error.message);
+  if (!data.session?.user) throw new Error('No active session.');
+  return await fetchProfile(data.session.user.id);
 });
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
-  await AsyncStorage.removeItem('user');
+  await supabase.auth.signOut();
 });
 
 export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ email }: { email: string }) => {
-    // Simulate sending reset email
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (!email.includes('@')) throw new Error('Please enter a valid email address.');
-    // In production, call your backend API here
-    return { email };
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes('@')) throw new Error('Please enter a valid email address.');
+
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    if (error) throw new Error(error.message);
+    return { email: cleanEmail };
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (changes: { name?: string; course?: string; educationLevel?: string }) => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) throw new Error('Not signed in.');
+
+    const updates: Record<string, unknown> = {};
+    if (changes.name !== undefined) updates.name = changes.name.trim();
+    if (changes.course !== undefined) updates.course = changes.course || null;
+    if (changes.educationLevel !== undefined) updates.education_level = changes.educationLevel || null;
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+    if (error) throw new Error(error.message);
+
+    return await fetchProfile(userId);
   }
 );
 
@@ -111,9 +158,12 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setUserFromSession: (state, action: PayloadAction<User | null>) => {
+      state.user = action.payload;
+      state.isAuthenticated = !!action.payload;
+    },
   },
   extraReducers: (builder) => {
-    // Login
     builder.addCase(loginUser.pending, (state) => {
       state.isLoading = true;
       state.error = null;
@@ -128,7 +178,6 @@ const authSlice = createSlice({
       state.error = action.error.message || 'Login failed';
     });
 
-    // Register
     builder.addCase(registerUser.pending, (state) => {
       state.isLoading = true;
       state.error = null;
@@ -143,19 +192,27 @@ const authSlice = createSlice({
       state.error = action.error.message || 'Registration failed';
     });
 
-    // Load user
     builder.addCase(loadUser.fulfilled, (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
     });
+    builder.addCase(loadUser.rejected, (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+    });
 
-    // Logout
     builder.addCase(logoutUser.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
     });
 
-    // Password Reset
+    builder.addCase(updateProfile.fulfilled, (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+    });
+    builder.addCase(updateProfile.rejected, (state, action) => {
+      state.error = action.error.message || 'Failed to update profile.';
+    });
+
     builder.addCase(resetPassword.pending, (state) => {
       state.isLoading = true;
       state.error = null;
@@ -170,5 +227,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setUserFromSession } = authSlice.actions;
 export default authSlice.reducer;

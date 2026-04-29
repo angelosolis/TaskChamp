@@ -1,5 +1,14 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Course, AcademicState } from '../../types';
+import { supabase } from '../../services/supabase';
+import { CourseRow } from '../../types/database';
+import { courseRowToCourse, courseToInsertRow, courseToUpdateRow } from '../../services/supabaseMappers';
+
+const COURSE_COLORS = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+  '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
+  '#C44569', '#F8B500', '#6C5CE7', '#A29BFE', '#FD79A8',
+];
 
 const initialState: AcademicState = {
   courses: [],
@@ -8,93 +17,106 @@ const initialState: AcademicState = {
   error: null,
 };
 
-// Predefined course colors
-const COURSE_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-  '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-  '#C44569', '#F8B500', '#6C5CE7', '#A29BFE', '#FD79A8'
-];
+async function getUserId(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const id = data.session?.user?.id;
+  if (!id) throw new Error('Not signed in.');
+  return id;
+}
 
+// ---------- Thunks ----------
+export const loadCourses = createAsyncThunk('academic/loadCourses', async () => {
+  await getUserId();
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .order('code', { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((data || []) as CourseRow[]).map(courseRowToCourse);
+});
+
+export const addCourse = createAsyncThunk(
+  'academic/addCourse',
+  async (input: Omit<Course, 'id' | 'color'> & { color?: string }, { getState }) => {
+    const userId = await getUserId();
+    const state = (getState() as any).academic as AcademicState;
+    const color = input.color || COURSE_COLORS[state.courses.length % COURSE_COLORS.length];
+
+    const { data, error } = await supabase
+      .from('courses')
+      .insert(courseToInsertRow({ ...input, color }, userId) as any)
+      .select('*')
+      .single();
+    if (error || !data) throw new Error(error?.message || 'Failed to add course.');
+    return courseRowToCourse(data as CourseRow);
+  }
+);
+
+export const updateCourse = createAsyncThunk(
+  'academic/updateCourse',
+  async (course: Course) => {
+    await getUserId();
+    const { data, error } = await supabase
+      .from('courses')
+      .update(courseToUpdateRow(course) as any)
+      .eq('id', course.id)
+      .select('*')
+      .single();
+    if (error || !data) throw new Error(error?.message || 'Failed to update course.');
+    return courseRowToCourse(data as CourseRow);
+  }
+);
+
+export const deleteCourse = createAsyncThunk('academic/deleteCourse', async (id: string) => {
+  await getUserId();
+  const { error } = await supabase.from('courses').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return id;
+});
+
+// ---------- Slice ----------
 const academicSlice = createSlice({
   name: 'academic',
   initialState,
   reducers: {
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
-    },
-    addCourse: (state, action: PayloadAction<Omit<Course, 'id' | 'color'>>) => {
-      const newCourse: Course = {
-        ...action.payload,
-        id: Date.now().toString(),
-        color: COURSE_COLORS[state.courses.length % COURSE_COLORS.length],
-      };
-      state.courses.push(newCourse);
-    },
-    updateCourse: (state, action: PayloadAction<Course>) => {
-      const index = state.courses.findIndex(course => course.id === action.payload.id);
-      if (index !== -1) {
-        state.courses[index] = action.payload;
-      }
-    },
-    deleteCourse: (state, action: PayloadAction<string>) => {
-      state.courses = state.courses.filter(course => course.id !== action.payload);
     },
     updateCurrentSemester: (state, action: PayloadAction<string>) => {
       state.currentSemester = action.payload;
     },
-    // Bulk operations
-    setCourses: (state, action: PayloadAction<Course[]>) => {
+  },
+  extraReducers: (builder) => {
+    builder.addCase(loadCourses.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(loadCourses.fulfilled, (state, action: PayloadAction<Course[]>) => {
+      state.isLoading = false;
       state.courses = action.payload;
-    },
-    // Common academic courses initialization
-    initializeDefaultCourses: (state) => {
-      if (state.courses.length === 0) {
-        const defaultCourses: Omit<Course, 'id' | 'color'>[] = [
-          {
-            code: 'CS101',
-            name: 'Introduction to Programming',
-            credits: 3,
-            targetGrade: 90,
-          },
-          {
-            code: 'MATH202',
-            name: 'Discrete Mathematics',
-            credits: 4,
-            targetGrade: 85,
-          },
-          {
-            code: 'ENG105',
-            name: 'Technical Writing',
-            credits: 3,
-            targetGrade: 90,
-          },
-        ];
+    });
+    builder.addCase(loadCourses.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.error.message || 'Failed to load courses';
+    });
 
-        defaultCourses.forEach((courseData, index) => {
-          const newCourse: Course = {
-            ...courseData,
-            id: Date.now().toString() + index,
-            color: COURSE_COLORS[index % COURSE_COLORS.length],
-          };
-          state.courses.push(newCourse);
-        });
-      }
-    },
+    builder.addCase(addCourse.fulfilled, (state, action: PayloadAction<Course>) => {
+      state.courses.push(action.payload);
+    });
+    builder.addCase(addCourse.rejected, (state, action) => {
+      state.error = action.error.message || 'Failed to add course';
+    });
+
+    builder.addCase(updateCourse.fulfilled, (state, action: PayloadAction<Course>) => {
+      const i = state.courses.findIndex((c) => c.id === action.payload.id);
+      if (i !== -1) state.courses[i] = action.payload;
+    });
+
+    builder.addCase(deleteCourse.fulfilled, (state, action: PayloadAction<string>) => {
+      state.courses = state.courses.filter((c) => c.id !== action.payload);
+    });
   },
 });
 
-export const {
-  setLoading,
-  setError,
-  addCourse,
-  updateCourse,
-  deleteCourse,
-  updateCurrentSemester,
-  setCourses,
-  initializeDefaultCourses,
-} = academicSlice.actions;
-
+export const { setError, updateCurrentSemester } = academicSlice.actions;
 export default academicSlice.reducer;

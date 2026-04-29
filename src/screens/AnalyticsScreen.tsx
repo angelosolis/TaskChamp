@@ -21,6 +21,15 @@ export default function AnalyticsScreen({ navigation }: Props) {
     const completed = tasks.filter(t => t.completed);
     const pending = tasks.filter(t => !t.completed);
     const overdue = pending.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
+    // Missed deadlines = currently overdue + tasks that were completed after their due date
+    const lateCompletions = completed.filter(t =>
+      t.dueDate && new Date(t.updatedAt) > new Date(t.dueDate)
+    );
+    const missedDeadlines = overdue.length + lateCompletions.length;
+    const onTimeRate = (overdue.length + lateCompletions.length + completed.length - lateCompletions.length) > 0
+      ? (completed.length - lateCompletions.length) /
+        (overdue.length + lateCompletions.length + completed.length - lateCompletions.length)
+      : 0;
 
     const completionRate = total > 0 ? completed.length / total : 0;
 
@@ -83,6 +92,7 @@ export default function AnalyticsScreen({ navigation }: Props) {
 
     return {
       total, completed: completed.length, pending: pending.length, overdue: overdue.length,
+      lateCompletions: lateCompletions.length, missedDeadlines, onTimeRate,
       completionRate, byPriority, byType, byDay, maxDayCount, weeks, maxWeek,
       avgDays, courseStats, mostProductiveDay,
     };
@@ -115,6 +125,35 @@ export default function AnalyticsScreen({ navigation }: Props) {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
+
+        {/* Missed Deadlines highlight */}
+        <Card style={styles.deadlineCard}>
+          <Card.Content>
+            <View style={styles.deadlineRow}>
+              <View style={styles.deadlineIcon}>
+                <MaterialCommunityIcons name="calendar-alert" size={28} color="#DC2626" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="titleMedium" style={styles.deadlineTitle}>Missed Deadlines</Text>
+                <Text variant="bodySmall" style={styles.deadlineMeta}>
+                  {stats.overdue} currently overdue · {stats.lateCompletions} completed late
+                </Text>
+              </View>
+              <Text variant="displaySmall" style={styles.deadlineBig}>{stats.missedDeadlines}</Text>
+            </View>
+            <View style={styles.deadlineRateRow}>
+              <Text variant="bodySmall" style={styles.deadlineRateLabel}>On-time rate</Text>
+              <Text variant="titleSmall" style={[styles.deadlineRate, { color: stats.onTimeRate >= 0.8 ? '#059669' : stats.onTimeRate >= 0.5 ? '#D97706' : '#DC2626' }]}>
+                {Math.round(stats.onTimeRate * 100)}%
+              </Text>
+            </View>
+            <ProgressBar
+              progress={stats.onTimeRate}
+              color={stats.onTimeRate >= 0.8 ? '#059669' : stats.onTimeRate >= 0.5 ? '#D97706' : '#DC2626'}
+              style={styles.deadlineProgress}
+            />
+          </Card.Content>
+        </Card>
 
         {/* Summary Row */}
         <View style={styles.summaryRow}>
@@ -304,6 +343,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   content: { padding: 16, paddingTop: 8, paddingBottom: 24 },
   summaryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  deadlineCard: { marginBottom: 16, elevation: 2, borderRadius: 12 },
+  deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  deadlineIcon: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: '#FEF2F2',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  deadlineTitle: { fontWeight: 'bold', color: '#1F2937' },
+  deadlineMeta: { color: '#6B7280', marginTop: 2 },
+  deadlineBig: { color: '#DC2626', fontWeight: 'bold' },
+  deadlineRateRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  deadlineRateLabel: { color: '#6B7280' },
+  deadlineRate: { fontWeight: 'bold' },
+  deadlineProgress: { height: 8, borderRadius: 4, marginTop: 6 },
   summaryBox: { flex: 1, borderRadius: 12, padding: 12, alignItems: 'center' },
   summaryNum: { fontWeight: 'bold' },
   summaryLabel: { color: '#6B7280', marginTop: 2 },

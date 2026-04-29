@@ -4,6 +4,7 @@ import authReducer from './slices/authSlice';
 import taskReducer from './slices/taskSlice';
 import calendarReducer from './slices/calendarSlice';
 import academicReducer from './slices/academicSlice';
+import programsReducer from './slices/programsSlice';
 import { RootState } from '../types';
 
 export const store = configureStore({
@@ -12,6 +13,7 @@ export const store = configureStore({
     tasks: taskReducer,
     calendar: calendarReducer,
     academic: academicReducer,
+    programs: programsReducer,
   },
 });
 

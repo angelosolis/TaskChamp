@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Text, TextInput, Button, Card, Snackbar, ActivityIndicator } from 'react-native-paper';
+import { Text, TextInput, Button, Card, Snackbar, ActivityIndicator, Menu, Surface } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { registerUser, clearError } from '../store/slices/authSlice';
-import { RootStackParamList } from '../types';
+import { loadPrograms } from '../store/slices/programsSlice';
+import { RootStackParamList, EDUCATION_LEVELS } from '../types';
 
 type Props = StackScreenProps<RootStackParamList, 'Register'>;
 
@@ -16,28 +17,35 @@ export default function RegisterScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [course, setCourse] = useState<string>('');
+  const [educationLevel, setEducationLevel] = useState<string>('');
+  const [courseMenuVisible, setCourseMenuVisible] = useState(false);
+  const [eduMenuVisible, setEduMenuVisible] = useState(false);
 
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
+  const { programs } = useAppSelector((state) => state.programs);
+
+  useEffect(() => {
+    dispatch(loadPrograms());
+  }, [dispatch]);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !course || !educationLevel) {
       return;
     }
-
-    if (password !== confirmPassword) {
-      // You could add a local error state here for password mismatch
-      return;
-    }
+    if (password !== confirmPassword) return;
 
     try {
-      await dispatch(registerUser({ 
-        name: name.trim(), 
-        email: email.trim(), 
-        password 
+      await dispatch(registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        course,
+        educationLevel,
       })).unwrap();
     } catch (error) {
-      // Error is handled by Redux
+      // Error surfaces via Snackbar
     }
   };
 
@@ -51,7 +59,9 @@ export default function RegisterScreen({ navigation }: Props) {
       email.trim() &&
       password.trim() &&
       confirmPassword.trim() &&
-      password === confirmPassword
+      password === confirmPassword &&
+      course &&
+      educationLevel
     );
   };
 
@@ -121,12 +131,73 @@ export default function RegisterScreen({ navigation }: Props) {
               autoComplete="password-new"
               style={styles.input}
               left={<TextInput.Icon icon="lock-check" />}
-              error={confirmPassword.trim() && password !== confirmPassword}
+              error={!!confirmPassword.trim() && password !== confirmPassword}
             />
 
             {confirmPassword.trim() && password !== confirmPassword && (
               <Text style={styles.errorText}>Passwords do not match</Text>
             )}
+
+            {/* Course dropdown */}
+            <Menu
+              visible={courseMenuVisible}
+              onDismiss={() => setCourseMenuVisible(false)}
+              anchor={
+                <Surface style={styles.dropdownAnchor} elevation={0}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setCourseMenuVisible(true)}
+                    style={styles.dropdownButton}
+                    contentStyle={styles.dropdownContent}
+                    icon="school"
+                  >
+                    {course ? programs.find((p) => p.code === course)?.name || course : 'Select your course'}
+                  </Button>
+                </Surface>
+              }
+            >
+              {programs.map((p) => (
+                <Menu.Item
+                  key={p.id}
+                  title={`${p.code} — ${p.name}`}
+                  onPress={() => {
+                    setCourse(p.code);
+                    setCourseMenuVisible(false);
+                  }}
+                />
+              ))}
+              {programs.length === 0 && <Menu.Item title="No courses available yet" disabled />}
+            </Menu>
+
+            {/* Education level dropdown */}
+            <Menu
+              visible={eduMenuVisible}
+              onDismiss={() => setEduMenuVisible(false)}
+              anchor={
+                <Surface style={styles.dropdownAnchor} elevation={0}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => setEduMenuVisible(true)}
+                    style={styles.dropdownButton}
+                    contentStyle={styles.dropdownContent}
+                    icon="account-school"
+                  >
+                    {educationLevel || 'Select education level'}
+                  </Button>
+                </Surface>
+              }
+            >
+              {EDUCATION_LEVELS.map((level) => (
+                <Menu.Item
+                  key={level}
+                  title={level}
+                  onPress={() => {
+                    setEducationLevel(level);
+                    setEduMenuVisible(false);
+                  }}
+                />
+              ))}
+            </Menu>
 
             <Button
               mode="contained"
@@ -198,6 +269,20 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
+  },
+  dropdownAnchor: {
+    backgroundColor: 'transparent',
+    marginBottom: 16,
+  },
+  dropdownButton: {
+    width: '100%',
+    borderRadius: 4,
+    justifyContent: 'flex-start',
+  },
+  dropdownContent: {
+    height: 52,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
   },
   errorText: {
     color: '#DC2626',

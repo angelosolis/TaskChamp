@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, Avatar, Surface, List, Divider } from 'react-native-paper';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Text, Card, Button, Avatar, List, Divider, Dialog, Portal, TextInput, Menu, Surface, Chip } from 'react-native-paper';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -9,8 +9,9 @@ import ModernHeader from '../components/ModernHeader';
 import { useNotification } from '../components/NotificationProvider';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { logoutUser } from '../store/slices/authSlice';
-import { MainTabParamList, MainStackParamList } from '../types';
+import { logoutUser, updateProfile } from '../store/slices/authSlice';
+import { loadPrograms } from '../store/slices/programsSlice';
+import { MainTabParamList, MainStackParamList, EDUCATION_LEVELS } from '../types';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Profile'>,
@@ -21,7 +22,40 @@ export default function ProfileScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { tasks } = useAppSelector((state) => state.tasks);
-  const { showInfo, showWarning } = useNotification();
+  const { programs } = useAppSelector((state) => state.programs);
+  const { showInfo, showWarning, showSuccess, showError } = useNotification();
+
+  const [editVisible, setEditVisible] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editCourse, setEditCourse] = useState(user?.course || '');
+  const [editEdu, setEditEdu] = useState(user?.educationLevel || '');
+  const [courseMenu, setCourseMenu] = useState(false);
+  const [eduMenu, setEduMenu] = useState(false);
+
+  useEffect(() => {
+    dispatch(loadPrograms());
+  }, [dispatch]);
+
+  const openEdit = () => {
+    setEditName(user?.name || '');
+    setEditCourse(user?.course || '');
+    setEditEdu(user?.educationLevel || '');
+    setEditVisible(true);
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await dispatch(updateProfile({
+        name: editName,
+        course: editCourse,
+        educationLevel: editEdu,
+      })).unwrap();
+      showSuccess('Profile updated', '');
+      setEditVisible(false);
+    } catch (e: any) {
+      showError('Update failed', e.message);
+    }
+  };
 
   const handleLogout = () => {
     showWarning(
@@ -78,10 +112,20 @@ export default function ProfileScreen({ navigation }: Props) {
               <Text variant="bodyMedium" style={styles.userEmail}>
                 {user?.email || 'No email'}
               </Text>
-              <Text variant="bodySmall" style={styles.memberSince}>
-                Member since {joinDate}
-              </Text>
+              <View style={styles.profileChips}>
+                {user?.course ? (
+                  <Chip compact icon="school" style={styles.profileChip}>{user.course}</Chip>
+                ) : null}
+                {user?.educationLevel ? (
+                  <Chip compact icon="account-school" style={styles.profileChip}>{user.educationLevel}</Chip>
+                ) : null}
+                {user?.role === 'admin' ? (
+                  <Chip compact icon="shield-account" style={[styles.profileChip, styles.adminChip]}
+                        textStyle={{ color: '#FFFFFF' }}>Admin</Chip>
+                ) : null}
+              </View>
             </View>
+            <Button mode="text" compact onPress={openEdit} icon="pencil">Edit</Button>
           </View>
         </Card.Content>
       </Card>
@@ -330,6 +374,52 @@ export default function ProfileScreen({ navigation }: Props) {
         </Card.Content>
       </Card>
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={editVisible} onDismiss={() => setEditVisible(false)}>
+          <Dialog.Title>Edit Profile</Dialog.Title>
+          <Dialog.Content>
+            <View style={{ gap: 8 }}>
+              <TextInput
+                label="Name" value={editName} mode="outlined"
+                onChangeText={setEditName}
+              />
+
+              <Menu visible={courseMenu} onDismiss={() => setCourseMenu(false)} anchor={
+                <Surface style={{ backgroundColor: 'transparent' }} elevation={0}>
+                  <Button mode="outlined" onPress={() => setCourseMenu(true)} icon="school">
+                    {editCourse || 'Select course'}
+                  </Button>
+                </Surface>
+              }>
+                <Menu.Item title="(none)" onPress={() => { setEditCourse(''); setCourseMenu(false); }} />
+                {programs.map((p) => (
+                  <Menu.Item key={p.id} title={p.code}
+                    onPress={() => { setEditCourse(p.code); setCourseMenu(false); }} />
+                ))}
+              </Menu>
+
+              <Menu visible={eduMenu} onDismiss={() => setEduMenu(false)} anchor={
+                <Surface style={{ backgroundColor: 'transparent' }} elevation={0}>
+                  <Button mode="outlined" onPress={() => setEduMenu(true)} icon="account-school">
+                    {editEdu || 'Select education level'}
+                  </Button>
+                </Surface>
+              }>
+                <Menu.Item title="(none)" onPress={() => { setEditEdu(''); setEduMenu(false); }} />
+                {EDUCATION_LEVELS.map((lvl) => (
+                  <Menu.Item key={lvl} title={lvl}
+                    onPress={() => { setEditEdu(lvl); setEduMenu(false); }} />
+                ))}
+              </Menu>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEditVisible(false)}>Cancel</Button>
+            <Button mode="contained" buttonColor="#6366F1" onPress={handleSaveProfile}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -376,6 +466,18 @@ const styles = StyleSheet.create({
   },
   memberSince: {
     color: '#9CA3AF',
+  },
+  profileChips: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  profileChip: {
+    backgroundColor: '#F3F4F6',
+  },
+  adminChip: {
+    backgroundColor: '#8B5CF6',
   },
   statsCard: {
     marginBottom: 16,

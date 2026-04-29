@@ -3,7 +3,28 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  course?: string;          // degree program code (e.g. 'BSCS')
+  educationLevel?: string;  // '1st year' / '2nd year' / 'Master\'s' / etc.
+  role?: 'student' | 'admin';
 }
+
+export interface Program {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
+export const EDUCATION_LEVELS = [
+  '1st year',
+  '2nd year',
+  '3rd year',
+  '4th year',
+  '5th year',
+  "Master's",
+  'PhD',
+] as const;
+export type EducationLevel = typeof EDUCATION_LEVELS[number];
 
 export interface Course {
   id: string;
@@ -48,6 +69,7 @@ export interface Task {
   updatedAt: string;
   
   // Academic Features
+  isAcademic: boolean; // false for personal/non-academic tasks
   courseId?: string; // Links to Course
   taskType: 'assignment' | 'exam' | 'project' | 'reading' | 'study' | 'other';
   estimatedTime?: number; // in minutes
@@ -110,11 +132,18 @@ export interface CalendarState {
   viewMode: 'month' | 'week' | 'day';
 }
 
+export interface ProgramsState {
+  programs: Program[];
+  isLoading: boolean;
+  error: string | null;
+}
+
 export interface RootState {
   auth: AuthState;
   tasks: TaskState;
   calendar: CalendarState;
   academic: AcademicState;
+  programs: ProgramsState;
 }
 
 // Navigation types

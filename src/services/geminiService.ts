@@ -107,10 +107,16 @@ export const getTaskRecommendations = async (tasks: Task[]): Promise<TaskRecomme
     smartPriority: t.smartPriority || 0,
   }));
 
-  const prompt = `You are a study coach for Filipino college students. Analyze these pending academic tasks and recommend the top 3 that need immediate attention.
+  const prompt = `You are a study coach for Filipino college students. Analyze these pending tasks and recommend the top 3 that need immediate attention.
 
 Tasks: ${JSON.stringify(taskData)}
 Today's date: ${new Date().toLocaleDateString()}
+
+IMPORTANT RULES for the "priority" field:
+- "urgent" is ONLY for tasks that are overdue OR due within 24 hours.
+- Difficulty (hard/medium/easy) MUST NOT influence the priority label. A hard task with a deadline 2 weeks away is NOT urgent.
+- Use "high" for high-stakes work (exam, project) due within 3-7 days.
+- Use "medium" / "low" for the rest.
 
 Return ONLY a valid JSON array with exactly 3 objects (or fewer if there are fewer tasks), no markdown:
 [
