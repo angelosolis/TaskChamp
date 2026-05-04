@@ -7,9 +7,9 @@ import { useNotification } from '../components/NotificationProvider';
 
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { updateTask, deleteTask } from '../store/slices/taskSlice';
-import { TaskStackParamList } from '../types';
+import { MainStackParamList } from '../types';
 
-type Props = StackScreenProps<TaskStackParamList, 'TaskDetail'>;
+type Props = StackScreenProps<MainStackParamList, 'TaskDetail'>;
 
 export default function TaskDetailScreen({ route, navigation }: Props) {
   const { taskId } = route.params;
@@ -30,6 +30,12 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
   if (!task) {
     return null;
   }
+
+  // Defensive defaults — Supabase rows always have these, but guard anyway
+  // so a malformed cached task can't crash the detail screen.
+  const safePriority = task.priority || 'medium';
+  const safeCreatedAt = task.createdAt || new Date().toISOString();
+  const safeUpdatedAt = task.updatedAt || safeCreatedAt;
 
   const handleToggleComplete = async () => {
     await dispatch(updateTask({
@@ -163,16 +169,16 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
                 <Chip
                   icon={() => (
                     <MaterialCommunityIcons
-                      name={getPriorityIcon(task.priority)}
+                      name={getPriorityIcon(safePriority)}
                       size={16}
-                      color={getPriorityColor(task.priority)}
+                      color={getPriorityColor(safePriority)}
                     />
                   )}
-                  textStyle={{ color: getPriorityColor(task.priority), fontWeight: 'bold' }}
-                  style={[styles.priorityChip, { borderColor: getPriorityColor(task.priority) }]}
+                  textStyle={{ color: getPriorityColor(safePriority), fontWeight: 'bold' }}
+                  style={[styles.priorityChip, { borderColor: getPriorityColor(safePriority) }]}
                   mode="outlined"
                 >
-                  {task.priority.toUpperCase()}
+                  {safePriority.toUpperCase()}
                 </Chip>
                 <Menu
                   visible={menuVisible}
@@ -181,7 +187,7 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
                     <Button
                       mode="text"
                       compact
-                      onPress={() => setMenuVisible(true)}
+                      onPress={() => setMenuVisible((v) => !v)}
                     >
                       Change
                     </Button>
@@ -291,13 +297,13 @@ export default function TaskDetailScreen({ route, navigation }: Props) {
             <View style={styles.timestampRow}>
               <MaterialCommunityIcons name="plus" size={16} color="#6B7280" />
               <Text variant="bodySmall" style={styles.timestampText}>
-                Created: {formatDate(task.createdAt)}
+                Created: {formatDate(safeCreatedAt)}
               </Text>
             </View>
             <View style={styles.timestampRow}>
               <MaterialCommunityIcons name="pencil" size={16} color="#6B7280" />
               <Text variant="bodySmall" style={styles.timestampText}>
-                Last updated: {formatDate(task.updatedAt)}
+                Last updated: {formatDate(safeUpdatedAt)}
               </Text>
             </View>
           </Card.Content>
@@ -475,9 +481,6 @@ const styles = StyleSheet.create({
   description: {
     color: '#4B5563',
     lineHeight: 20,
-  },
-  completedText: {
-    opacity: 0.7,
   },
   timestampCard: {
     marginBottom: 16,

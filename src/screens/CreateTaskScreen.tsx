@@ -49,6 +49,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
   const [newResourceType, setNewResourceType] = useState<'link' | 'file' | 'note' | 'video' | 'document'>('link');
   const [pickedFileName, setPickedFileName] = useState<string>('');
   const [pickedFileSize, setPickedFileSize] = useState<number | null>(null);
+  const [showTimer, setShowTimer] = useState(false);
 
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.tasks);
@@ -91,12 +92,14 @@ export default function CreateTaskScreen({ navigation }: Props) {
       setPriority('medium');
       setCategory('');
       setDueDate(undefined);
+      setIsAcademic(true);
       setSelectedCourseId('');
       setTaskType('other');
       setEstimatedTime('');
       setDifficulty('medium');
       setGradeWeight('');
       setResources([]);
+      setShowTimer(false);
       
       // Show success message
       setSuccessVisible(true);
@@ -224,9 +227,23 @@ export default function CreateTaskScreen({ navigation }: Props) {
     { value: 'high', label: 'High', icon: 'keyboard-arrow-up' },
   ];
 
-  const commonCategories = [
-    'Work', 'Personal', 'Health', 'Learning', 'Finance', 'Home'
+  const personalCategories = [
+    'Health', 'Fitness', 'Home', 'Errand', 'Finance', 'Hobby', 'Family', 'Work',
   ];
+
+  const switchMode = (academic: boolean) => {
+    if (academic === isAcademic) return;
+    setIsAcademic(academic);
+    if (academic) {
+      // entering Academic — drop personal-only state
+      setCategory('');
+    } else {
+      // entering Personal — drop academic-only state
+      setSelectedCourseId('');
+      setTaskType('other');
+      setGradeWeight('');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -298,32 +315,6 @@ export default function CreateTaskScreen({ navigation }: Props) {
               />
             </View>
 
-            {/* Category */}
-            <View style={styles.section}>
-              <TextInput
-                label="Category (Optional)"
-                value={category}
-                onChangeText={setCategory}
-                mode="outlined"
-                style={styles.input}
-                placeholder="e.g., Work, Personal, Health"
-                left={<TextInput.Icon icon="label" />}
-              />
-              <View style={styles.categoryChips}>
-                {commonCategories.map((cat) => (
-                  <Button
-                    key={cat}
-                    mode={category === cat ? 'contained' : 'outlined'}
-                    compact
-                    onPress={() => setCategory(category === cat ? '' : cat)}
-                    style={styles.categoryChip}
-                  >
-                    {cat}
-                  </Button>
-                ))}
-              </View>
-            </View>
-
             {/* Due Date */}
             <View style={styles.section}>
               <Text variant="titleSmall" style={styles.sectionTitle}>
@@ -358,7 +349,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
               >
                 <Button
                   mode="text"
-                  onPress={() => setIsAcademic(true)}
+                  onPress={() => switchMode(true)}
                   style={styles.toggleButton}
                   contentStyle={styles.toggleContent}
                   labelStyle={[styles.toggleLabel, isAcademic && styles.toggleLabelActive]}
@@ -375,7 +366,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
               >
                 <Button
                   mode="text"
-                  onPress={() => setIsAcademic(false)}
+                  onPress={() => switchMode(false)}
                   style={styles.toggleButton}
                   contentStyle={styles.toggleContent}
                   labelStyle={[styles.toggleLabel, !isAcademic && styles.toggleLabelActive]}
@@ -416,7 +407,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
                     <Surface style={styles.courseSelector} elevation={1}>
                       <Button
                         mode="text"
-                        onPress={() => setShowCourseMenu(true)}
+                        onPress={() => setShowCourseMenu((v) => !v)}
                         style={styles.courseSelectorButton}
                         contentStyle={styles.courseSelectorContent}
                         labelStyle={styles.courseSelectorLabel}
@@ -515,66 +506,7 @@ export default function CreateTaskScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              {/* Time and Difficulty Row */}
-              <View style={styles.academicRow}>
-                <View style={styles.academicFieldHalf}>
-                  <View style={styles.fieldLabelRow}>
-                    <MaterialCommunityIcons name="clock-outline" size={16} color="#374151" />
-                    <Text variant="titleSmall" style={styles.fieldLabelText}>
-                      Est. Time
-                    </Text>
-                  </View>
-                  <Surface style={styles.inputSurface} elevation={1}>
-                    <TextInput
-                      value={estimatedTime}
-                      onChangeText={setEstimatedTime}
-                      mode="flat"
-                      keyboardType="numeric"
-                      placeholder="90"
-                      right={<TextInput.Affix text="min" />}
-                      style={styles.flatInput}
-                      contentStyle={styles.flatInputContent}
-                    />
-                  </Surface>
-                </View>
-
-                <View style={styles.academicFieldHalf}>
-                  <View style={styles.fieldLabelRow}>
-                    <MaterialCommunityIcons name="target" size={16} color="#374151" />
-                    <Text variant="titleSmall" style={styles.fieldLabelText}>
-                      Difficulty
-                    </Text>
-                  </View>
-                  <View style={styles.difficultyContainer}>
-                    {['easy', 'medium', 'hard'].map((level) => (
-                      <Surface
-                        key={level}
-                        style={[
-                          styles.difficultyChip,
-                          difficulty === level && styles.selectedDifficultyChip
-                        ]}
-                        elevation={difficulty === level ? 2 : 0}
-                      >
-                        <Button
-                          mode="text"
-                          compact
-                          onPress={() => setDifficulty(level as any)}
-                          style={styles.difficultyButton}
-                          contentStyle={styles.difficultyButtonContent}
-                          labelStyle={[
-                            styles.difficultyLabel,
-                            difficulty === level && styles.selectedDifficultyLabel
-                          ]}
-                        >
-                          {level.charAt(0).toUpperCase() + level.slice(1)}
-                        </Button>
-                      </Surface>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              {/* Grade Weight (conditional) */}
+              {/* Grade Weight — only when a course is selected */}
               {selectedCourseId && (
                 <View style={styles.academicField}>
                   <View style={styles.fieldLabelRow}>
@@ -597,68 +529,172 @@ export default function CreateTaskScreen({ navigation }: Props) {
                   </Surface>
                 </View>
               )}
-
-              {/* Resources */}
-              <View style={styles.academicField}>
-                <View style={styles.resourcesHeader}>
-                  <View style={styles.fieldLabelRow}>
-                    <MaterialCommunityIcons name="paperclip" size={16} color="#374151" />
-                    <Text variant="titleSmall" style={styles.fieldLabelText}>
-                      Resources
-                    </Text>
-                  </View>
-                  <Button
-                    mode="text"
-                    compact
-                    onPress={() => setShowResourceDialog(true)}
-                    labelStyle={styles.addResourceLabel}
-                  >
-                    <MaterialCommunityIcons name="plus" size={16} />
-                    Add Resource
-                  </Button>
-                </View>
-                
-                {resources.length > 0 ? (
-                  <View style={styles.resourcesList}>
-                    {resources.map((resource) => (
-                      <Surface key={resource.id} style={styles.resourceChipSurface} elevation={1}>
-                        <Chip
-                          mode="flat"
-                          onPress={() => handleOpenResource(resource)}
-                          onClose={() => handleRemoveResource(resource.id)}
-                          icon={
-                            resource.type === 'link' ? 'link' :
-                            resource.type === 'video' ? 'play' :
-                            resource.type === 'document' ? 'file-document' :
-                            resource.type === 'note' ? 'note-text' : 'paperclip'
-                          }
-                          style={styles.resourceChip}
-                          textStyle={styles.resourceChipText}
-                        >
-                          {resource.title}
-                        </Chip>
-                      </Surface>
-                    ))}
-                  </View>
-                ) : (
-                  <Surface style={styles.emptyResourcesCard} elevation={0}>
-                    <Text variant="bodySmall" style={styles.emptyResourcesText}>
-                      No resources added yet
-                    </Text>
-                  </Surface>
-                )}
-              </View>
             </View>
             )}
 
+            {/* Personal section — only when Personal mode */}
+            {!isAcademic && (
+              <View style={styles.section}>
+                <TextInput
+                  label="Category (Optional)"
+                  value={category}
+                  onChangeText={setCategory}
+                  mode="outlined"
+                  style={styles.input}
+                  placeholder="e.g., Health, Fitness, Errand"
+                  left={<TextInput.Icon icon="label" />}
+                />
+                <View style={styles.categoryChips}>
+                  {personalCategories.map((cat) => (
+                    <Button
+                      key={cat}
+                      mode={category === cat ? 'contained' : 'outlined'}
+                      compact
+                      onPress={() => setCategory(category === cat ? '' : cat)}
+                      style={styles.categoryChip}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Common section — both modes: effort tracking + attachments */}
+            <View style={styles.academicRow}>
+              <View style={styles.academicFieldHalf}>
+                <View style={styles.fieldLabelRow}>
+                  <MaterialCommunityIcons name="clock-outline" size={16} color="#374151" />
+                  <Text variant="titleSmall" style={styles.fieldLabelText}>
+                    Est. Time
+                  </Text>
+                </View>
+                <Surface style={styles.inputSurface} elevation={1}>
+                  <TextInput
+                    value={estimatedTime}
+                    onChangeText={setEstimatedTime}
+                    mode="flat"
+                    keyboardType="numeric"
+                    placeholder="90"
+                    right={<TextInput.Affix text="min" />}
+                    style={styles.flatInput}
+                    contentStyle={styles.flatInputContent}
+                  />
+                </Surface>
+              </View>
+
+              <View style={styles.academicFieldHalf}>
+                <View style={styles.fieldLabelRow}>
+                  <MaterialCommunityIcons name="target" size={16} color="#374151" />
+                  <Text variant="titleSmall" style={styles.fieldLabelText}>
+                    Difficulty
+                  </Text>
+                </View>
+                <View style={styles.difficultyContainer}>
+                  {['easy', 'medium', 'hard'].map((level) => (
+                    <Surface
+                      key={level}
+                      style={[
+                        styles.difficultyChip,
+                        difficulty === level && styles.selectedDifficultyChip,
+                      ]}
+                      elevation={difficulty === level ? 2 : 0}
+                    >
+                      <Button
+                        mode="text"
+                        compact
+                        onPress={() => setDifficulty(level as any)}
+                        style={styles.difficultyButton}
+                        contentStyle={styles.difficultyButtonContent}
+                        labelStyle={[
+                          styles.difficultyLabel,
+                          difficulty === level && styles.selectedDifficultyLabel,
+                        ]}
+                      >
+                        {level.charAt(0).toUpperCase() + level.slice(1)}
+                      </Button>
+                    </Surface>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* Resources — both modes */}
+            <View style={styles.academicField}>
+              <View style={styles.resourcesHeader}>
+                <View style={styles.fieldLabelRow}>
+                  <MaterialCommunityIcons name="paperclip" size={16} color="#374151" />
+                  <Text variant="titleSmall" style={styles.fieldLabelText}>
+                    Resources
+                  </Text>
+                </View>
+                <Button
+                  mode="text"
+                  compact
+                  onPress={() => setShowResourceDialog(true)}
+                  labelStyle={styles.addResourceLabel}
+                >
+                  <MaterialCommunityIcons name="plus" size={16} />
+                  Add Resource
+                </Button>
+              </View>
+
+              {resources.length > 0 ? (
+                <View style={styles.resourcesList}>
+                  {resources.map((resource) => (
+                    <Surface key={resource.id} style={styles.resourceChipSurface} elevation={1}>
+                      <Chip
+                        mode="flat"
+                        onPress={() => handleOpenResource(resource)}
+                        onClose={() => handleRemoveResource(resource.id)}
+                        icon={
+                          resource.type === 'link' ? 'link' :
+                          resource.type === 'video' ? 'play' :
+                          resource.type === 'document' ? 'file-document' :
+                          resource.type === 'note' ? 'note-text' : 'paperclip'
+                        }
+                        style={styles.resourceChip}
+                        textStyle={styles.resourceChipText}
+                      >
+                        {resource.title}
+                      </Chip>
+                    </Surface>
+                  ))}
+                </View>
+              ) : (
+                <Surface style={styles.emptyResourcesCard} elevation={0}>
+                  <Text variant="bodySmall" style={styles.emptyResourcesText}>
+                    No resources added yet
+                  </Text>
+                </Surface>
+              )}
+            </View>
+
             <Divider style={styles.divider} />
 
-            {/* Study Timer (works for both academic and personal tasks) */}
+            {/* Optional Focus Timer — opt-in, hidden by default */}
             <View style={styles.section}>
-              <Text variant="titleSmall" style={styles.sectionTitle}>
-                📚 Want to start studying?
-              </Text>
-              <StudyTimerWidget compact={true} />
+              <Button
+                mode="outlined"
+                onPress={() => setShowTimer((v) => !v)}
+                icon={() => (
+                  <MaterialCommunityIcons
+                    name={showTimer ? 'chevron-up' : 'timer-outline'}
+                    size={18}
+                    color="#667eea"
+                  />
+                )}
+                style={styles.timerToggleButton}
+                contentStyle={styles.timerToggleContent}
+                textColor="#667eea"
+              >
+                {showTimer ? 'Hide Focus Timer' : 'Start a Focus Session'}
+              </Button>
+              {showTimer && (
+                <View style={styles.timerWidgetWrap}>
+                  <StudyTimerWidget compact={true} />
+                </View>
+              )}
             </View>
 
             {/* Create Task Button */}
@@ -1020,6 +1056,16 @@ const styles = StyleSheet.create({
   },
   toggleLabelActive: {
     color: '#FFFFFF',
+  },
+  timerToggleButton: {
+    borderRadius: 12,
+    borderColor: '#C7D2FE',
+  },
+  timerToggleContent: {
+    height: 44,
+  },
+  timerWidgetWrap: {
+    marginTop: 12,
   },
   // Academic Section Styles
   academicSection: {

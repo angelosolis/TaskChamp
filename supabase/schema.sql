@@ -13,25 +13,9 @@
 create extension if not exists pgcrypto;
 
 -- ----------------------------------------------------------------------------
--- 2. Helper: is_admin() — used in RLS policies
---     SECURITY DEFINER so the function bypasses RLS when reading profiles
---     to determine the caller's role.
--- ----------------------------------------------------------------------------
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
-  );
-$$;
-
--- ----------------------------------------------------------------------------
--- 3. Tables
+-- 2. Tables
+--     (Created BEFORE is_admin() because that function references public.profiles
+--      and `language sql` validates the body at CREATE time.)
 -- ----------------------------------------------------------------------------
 
 -- profiles: extends auth.users with app-specific fields
@@ -149,6 +133,24 @@ create table if not exists public.study_sessions (
 );
 create index if not exists idx_sessions_user on public.study_sessions(user_id);
 create index if not exists idx_sessions_task on public.study_sessions(task_id);
+
+-- ----------------------------------------------------------------------------
+-- 3. Helper: is_admin() — used in RLS policies
+--     SECURITY DEFINER so the function bypasses RLS when reading profiles
+--     to determine the caller's role.
+-- ----------------------------------------------------------------------------
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
 
 -- ----------------------------------------------------------------------------
 -- 4. Triggers

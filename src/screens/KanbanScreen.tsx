@@ -135,9 +135,9 @@ export default function KanbanScreen({ navigation }: Props) {
 
           <View style={styles.taskMeta}>
             <View style={styles.priorityContainer}>
-              <Text style={styles.priorityIcon}>{getPriorityIcon(task.priority)}</Text>
-              <Text style={[styles.priorityText, { color: getPriorityColor(task.priority) }]}>
-                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              <Text style={styles.priorityIcon}>{getPriorityIcon(task.priority || 'medium')}</Text>
+              <Text style={[styles.priorityText, { color: getPriorityColor(task.priority || 'medium') }]}>
+                {((task.priority || 'medium').charAt(0).toUpperCase()) + (task.priority || 'medium').slice(1)}
               </Text>
             </View>
             

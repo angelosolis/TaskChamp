@@ -255,8 +255,8 @@ export default function CalendarScreen({ navigation }: Props) {
                       {task.title}
                     </Text>
                     <Chip mode="outlined" compact style={styles.priorityChip}
-                      textStyle={{ color: getPriorityColor(task.priority), fontSize: 10 }}>
-                      {task.priority.toUpperCase()}
+                      textStyle={{ color: getPriorityColor(task.priority || 'medium'), fontSize: 10 }}>
+                      {(task.priority || 'medium').toUpperCase()}
                     </Chip>
                   </View>
                 </Card.Content>

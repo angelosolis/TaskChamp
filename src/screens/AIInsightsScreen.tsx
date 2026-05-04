@@ -8,11 +8,9 @@ import ModernHeader from '../components/ModernHeader';
 import { useAppSelector } from '../store/store';
 import { MainTabParamList } from '../types';
 import {
-  getAIInsights,
-  getTaskRecommendations,
+  getAIBundle,
   AIInsight,
   TaskRecommendation,
-  getStudyTip,
 } from '../services/geminiService';
 
 type Props = BottomTabScreenProps<MainTabParamList, 'AIInsights'>;
@@ -59,29 +57,18 @@ export default function AIInsightsScreen({}: Props) {
     setIsLoadingRecs(true);
     setIsLoadingTip(true);
 
-    // Fetch all three in parallel
-    const [insightsResult, recsResult, tipResult] = await Promise.allSettled([
-      getAIInsights(tasks),
-      getTaskRecommendations(tasks),
-      getStudyTip(tasks),
-    ]);
-
-    setIsLoadingInsights(false);
-    setIsLoadingRecs(false);
-    setIsLoadingTip(false);
-
-    if (insightsResult.status === 'fulfilled') {
-      setAiInsights(insightsResult.value);
-    } else {
-      setError('Could not load AI insights. Check your connection.');
-    }
-
-    if (recsResult.status === 'fulfilled') {
-      setRecommendations(recsResult.value);
-    }
-
-    if (tipResult.status === 'fulfilled') {
-      setStudyTip(tipResult.value);
+    try {
+      // Single API call for all three (avoids burning 3 RPM slots per load).
+      const bundle = await getAIBundle(tasks);
+      setAiInsights(bundle.insights || []);
+      setRecommendations(bundle.recommendations || []);
+      setStudyTip(bundle.tip || '');
+    } catch (e: any) {
+      setError(e?.message || 'Task AI is unavailable right now.');
+    } finally {
+      setIsLoadingInsights(false);
+      setIsLoadingRecs(false);
+      setIsLoadingTip(false);
     }
   }, [tasks]);
 

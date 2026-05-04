@@ -1,0 +1,666 @@
+
+
+================================================================================
+STEP 1 — REPLACE "Objectives of the Study" (CHAPTER I)
+================================================================================
+[ ] Find the heading "Objectives of the Study" in Chapter I.
+[ ] DELETE everything between that heading and "Scope and Limitation of the Study".
+[ ] PASTE the text below in its place.
+
+--- BEGIN PASTE ---
+
+General Objective
+
+To design, develop, and evaluate TASKCHAMP, a mobile-based student planner and
+task tracker that applies a deterministic urgency-importance prioritization
+algorithm combined with an AI-assisted recommendation and grade-forecasting
+model to reduce missed deadlines, improve scheduling effectiveness, and
+centralize academic and personal task management for college students at the
+University of Cebu Lapu-Lapu and Mandaue.
+
+Specific Objectives
+
+1. Address the identified challenges in academic task management by:
+   1.1 Tracking and reducing the incidence of missed deadlines through a
+       dedicated metric that aggregates currently-overdue tasks and
+       historically late completions, displayed as an on-time-rate percentage
+       on the analytics dashboard.
+   1.2 Implementing effective scheduling and prioritization through a Smart
+       Priority algorithm that combines deadline-driven urgency (0–50) and
+       stakes-driven importance (0–50), explicitly excluding subjective
+       difficulty ratings to prevent false-urgent labeling.
+
+2. Provide a unified workspace for academic and personal task management by
+   enabling users to:
+   2.1 Create, view, update, and delete both academic and personal tasks,
+       distinguished by an explicit Academic / Personal toggle that
+       conditionally exposes course-related fields.
+   2.2 Visualize tasks across three views — list, Kanban board (drag-and-drop
+       status), and a centralized calendar that merges tasks with academic
+       events.
+   2.3 Record focused study time using a built-in Pomodoro-style timer with
+       customizable session durations (15, 25, 45, 60, or any value 1–180
+       minutes) and break / long-break cycles.
+
+3. Implement an Academic Hub module that allows students to:
+   3.1 Manage personal subjects (course code, professor, credits, current
+       grade, target grade) with per-task linking and grade-weight tracking.
+   3.2 Receive AI-generated task recommendations and grade forecasts through
+       Task AI, presenting the top three priority items and a per-course
+       predicted final grade.
+
+4. Implement an Administrator module that allows authorized staff to:
+   4.1 Maintain the UCLM degree-program registry that powers the registration
+       dropdown.
+   4.2 View, edit, promote, or remove student records.
+   4.3 Monitor system-wide statistics (total students, active programs, recent
+       signups).
+
+5. Implement secure user account and profile management, including:
+   5.1 Email-and-password registration capturing the student's degree program
+       (BSCS, BSIT, etc.) and education level (1st year, 2nd year, …,
+       Master's, PhD).
+   5.2 Authentication backed by Supabase Auth with row-level security ensuring
+       each user can only access their own data.
+   5.3 Profile editing for name, course, and education level.
+
+6. Integrate context-aware notifications (push and in-app) to remind users of
+   upcoming, due-soon, and overdue tasks, and to confirm completion of focused
+   study sessions.
+
+7. Design a user-friendly mobile interface that follows Material Design
+   principles, supports both academic and personal workflows in a single
+   application, and is suitable for the Android devices most commonly used by
+   UCLM students.
+
+--- END PASTE ---
+
+WHY THIS CHANGES:
+- Old General was vague ("uses AI…") — panel said "lacking details."
+- Old 4.2 (Backup & Sync) is now obsolete: Supabase IS always-on cloud sync.
+- Old 4.3 (Theme customization) is not implemented — removed.
+- New objectives 4 (Admin) and 3.2 (AI Insights / Grade Forecast) reflect what
+  the system actually delivers and what the panel asked for.
+
+
+================================================================================
+STEP 2 — RE-DRAW Figure 14 "Use Case Diagram"
+================================================================================
+[ ] Open the existing Figure 14 in your diagram tool.
+[ ] Re-draw with THREE actors and grouped use cases as below.
+
+ACTORS (3):
+  • Student          (primary user)
+  • Admin            (UCLM staff)
+  • Task AI          (external system actor — Gemini API)
+
+USE CASES, grouped per module:
+
+  ── Account ──────────────────────────────
+     Register Account
+     Login
+     Reset Password
+     Edit Profile
+     Logout
+
+  ── Task Management ──────────────────────
+     Create Academic Task     <<extends>> Create Task
+     Create Personal Task     <<extends>> Create Task
+     Manage Tasks             (View / Edit / Delete / Update Status)
+     Attach Resource          (file / link / note / video)
+     Calculate Smart Priority <<included by>> Create / Update Task
+
+  ── Academic Hub ─────────────────────────
+     Manage Subjects                        (subjects per student)
+     View Course Progress
+     Request AI Insights
+     Request Grade Forecast
+
+  ── Calendar & Time ──────────────────────
+     Manage Calendar Events                 (class / exam / assignment / event / reminder)
+     Track Study Session                    (Pomodoro)
+
+  ── Analytics & Notifications ────────────
+     View Analytics            <<includes>> Compute Missed Deadlines
+     Receive Notifications
+
+  ── Admin Module ─────────────────────────
+     View Admin Dashboard
+     Manage Students                        (View / Edit / Delete / Change role)
+     Manage Programs                        (CRUD UCLM degree programs)
+
+ASSOCIATIONS (lines from actor → use case):
+  Student → all Account, Task Management, Academic Hub, Calendar & Time,
+            Analytics & Notifications use cases
+  Admin   → Login, Logout, Edit Profile, all Admin Module use cases
+  Task AI ← associated with: Request AI Insights, Request Grade Forecast
+            (Task AI is the responder; the student initiates)
+
+INCLUDES / EXTENDS RELATIONSHIPS:
+  Register Account              <<includes>>  Create Profile
+  Login                         <<includes>>  Validate Credentials
+  Create Task                   <<includes>>  Calculate Smart Priority
+  Create Academic Task          <<extends>>   Create Task   (toggle = Academic)
+  Create Personal Task          <<extends>>   Create Task   (toggle = Personal)
+  Create Task                   <<extends>>   Attach Resource (optional)
+  View Analytics                <<includes>>  Compute Missed Deadlines
+  Request AI Insights           <<includes>>  Call Task AI
+  Request Grade Forecast        <<includes>>  Call Task AI
+
+
+================================================================================
+STEP 3 — UPDATE / ADD / REMOVE sub-figures and step tables
+================================================================================
+
+Existing figure / Action / Notes:
+
+[ ] Fig 15 (Registration) — EDIT
+    Update the steps to include picking Course (degree program) and
+    Education Level. Both are required.
+
+[ ] Fig 16 (Login) — KEEP AS-IS
+
+[ ] Fig 17 (Manage Task) — EDIT
+    Add a step at the top: "Toggle Academic / Personal at the top of the
+    Create Task form." Note that academic fields hide for Personal.
+
+[ ] Fig 20 (Manage Events) — KEEP AS-IS
+
+[ ] Fig 21 (Create Academic Task) — EDIT
+    Reframe as a specialization of Manage Task with toggle = Academic.
+
+[ ] Fig 22 (Add Course) — RENAME to "Manage Subjects" — EDIT
+    Update the steps to show full CRUD: Profile → Manage Courses → tap +
+    (or pencil to edit, or trash to delete) → fill code/name/professor/credits/
+    current grade/target grade → Save.
+
+[ ] Fig 23 (Study Timer) — EDIT
+    Add: choose duration via presets (15 / 25 / 45 / 60) or type a custom
+    minutes value (1–180).
+
+[ ] Fig 24 (Clear Data) — REMOVE
+    Move the action under Account Settings; not a separate use case.
+
+[ ] Fig 25 (Notifications) — EDIT
+    Note both push notifications and in-app banner alerts.
+
+[ ] Fig 26 (Account Settings) — EDIT
+    Add: Edit Profile (change name, course, education level).
+
+[ ] Fig 27 (Backup & Sync) — REMOVE OR REPURPOSE
+    Replace with a small "Cloud Synchronization" diagram showing Supabase
+    Postgres as the always-on backend. Optional.
+
+ADD THESE NEW SUB-FIGURES + TABLES:
+
+[ ] Fig 28 — Create Personal Task / Table 17 — Steps in creating a personal task
+    Steps:
+      1. Open Create Task screen.
+      2. Toggle Personal at the top.
+      3. Academic fields (course, task type, grade weight) hide automatically.
+      4. Enter title, description, priority, due date, optional category.
+      5. Optionally start a study timer for the task.
+      6. Tap Save.
+
+[ ] Fig 29 — Manage Programs (Admin) / Table 18 — Steps in managing programs
+    Steps:
+      1. Login as admin.
+      2. Tap the Programs tab.
+      3. Tap + to add a new program (code + name).
+      4. Tap pencil on a program row to edit; toggle Active to enable/disable.
+      5. Tap trash to delete (existing students keep their assignment, but
+         the program no longer appears in the registration dropdown).
+
+[ ] Fig 30 — Manage Students (Admin) / Table 19 — Steps in managing students
+    Steps:
+      1. Login as admin.
+      2. Tap the Students tab.
+      3. View list of registered students with course / education / role chips.
+      4. Tap pencil to edit name / course / education level / role.
+      5. Tap trash to remove a student record.
+
+[ ] Fig 31 — Request AI Insights / Table 20 — Steps in requesting AI insights
+    Steps:
+      1. Open AI Insights screen (Profile → AI Insights).
+      2. Tap "Generate Insights".
+      3. The system collects pending tasks and sends them to Task AI.
+      4. Three recommendation cards display: task title, reason, suggested
+         action, priority badge.
+
+[ ] Fig 32 — Request Grade Forecast / Table 21 — Steps in requesting forecast
+    Steps:
+      1. Open Grade Forecast screen (Profile → Grade Forecast).
+      2. Tap "Generate Forecast".
+      3. Per-course predicted final grade displays with reasoning.
+
+
+================================================================================
+STEP 4 — ADD new section "Algorithms Used in the System" in Chapter III
+================================================================================
+[ ] In Chapter III, after the Use Case Diagram section ends (right before the
+    Storyboard section), insert a new H1 heading and the content below.
+
+--- BEGIN PASTE ---
+
+Algorithms Used in the System
+
+The system implements two algorithms that directly fulfill specific objectives
+1.2 (effective scheduling and prioritization) and 3.2 (AI-generated grade
+forecasting).
+
+A. Smart Priority Algorithm (Task Prioritization)
+
+Purpose. Rank a student's pending tasks so they can focus on what matters next,
+blending two orthogonal signals: how soon something is due (urgency) and how
+much it is worth (importance). The algorithm is deterministic and explainable,
+returning a 0-to-100 score per task.
+
+Formula:
+
+    SmartPriority(t) = UrgencyScore(t) + ImportanceScore(t),  range [0, 100]
+
+Urgency Score (0–50) — derived strictly from time-to-deadline:
+
+    Overdue                     → 50
+    Due ≤ 1 day                 → 45
+    Due ≤ 3 days                → 35
+    Due ≤ 7 days                → 25
+    Due ≤ 14 days               → 15
+    > 14 days                   → 5
+    No due date                 → 0
+
+Importance Score (0–50) — for academic tasks:
+
+    basePriority = { high: 20, medium: 12, low: 6 }[task.priority]
+    typeBonus    = { exam: 15, project: 12, assignment: 10,
+                     study: 8, reading: 6, other: 5 }[task.taskType]
+    weightBonus  = min(task.gradeWeight / 5, 10)
+
+    Importance   = clamp(basePriority + typeBonus + weightBonus, 0, 50)
+
+For personal tasks, only basePriority applies.
+
+Note on difficulty. Difficulty is captured for effort estimation in the UI
+but is intentionally excluded from the priority score. An earlier version
+multiplied importance by 1.2 for hard tasks, which caused low-stakes-but-
+difficult tasks to outrank deadline-critical assignments — falsely tagging
+them "urgent." This was corrected based on panel feedback.
+
+Worked Example. A high-priority CS101 final exam worth 40% of the grade,
+due in 5 days:
+
+    Urgency       = 25                       (≤ 7 days)
+    basePriority  = 20                       (high)
+    typeBonus     = 15                       (exam)
+    weightBonus   = min(40 / 5, 10) = 8
+    Importance    = 20 + 15 + 8 = 43
+    SmartPriority = 25 + 43 = 68 / 100
+
+This task would appear near the top of the student's priority list.
+
+
+B. Grade Forecast Algorithm
+
+Purpose. Estimate the student's final percentage grade per course before the
+semester ends, supporting self-monitoring and early intervention.
+
+Two-tier approach.
+
+Tier 1 — Deterministic baseline:
+
+    avgEarnedGrade = Σ(weight × grade / 100) ÷ Σ(weight)
+                       (over completed-and-graded tasks)
+
+    pendingWeight  = Σ weight                     (over incomplete tasks)
+    earnedWeight   = Σ weight                     (over completed-and-graded tasks)
+    unknownWeight  = max(100 − earnedWeight − pendingWeight, 0)
+
+    predictedFinal = (avgEarnedGrade × earnedWeight) +
+                     (avgEarnedGrade × pendingWeight) +
+                     (avgEarnedGrade × unknownWeight)
+
+Plain English: "What you've earned, plus your historical average applied to
+what's still left."
+
+Tier 2 — AI-augmented refinement:
+The deterministic baseline is sent to Task AI with deadline pressure and recent
+trend data. The AI may adjust the estimate by ±3–5 points if it detects a
+strong improving / declining pattern, historical underperformance on a specific
+assessment type, or workload pressure that risks rushed work. The output is
+presented as a range (e.g., "85–89%") with the deterministic value as the
+midpoint.
+
+Worked Example. CS101 midway through the semester:
+
+    Task         Weight    Grade
+    Quiz 1       10%       88
+    Quiz 2       10%       92
+    Midterm      30%       85
+    Final        40%       (pending)
+    Project      10%       (pending)
+
+    Earned weight contribution = 10×0.88 + 10×0.92 + 30×0.85 = 43.5
+    Average earned grade        = 43.5 / 50 = 87%
+    Pending weight              = 50
+    predictedFinal              = 43.5 + (0.87 × 50) = 87
+
+    Predicted final grade ≈ 87%
+
+--- END PASTE ---
+
+
+================================================================================
+STEP 5 — UPDATE Figure 33 "Entity Relationship Diagram"
+================================================================================
+[ ] Re-draw Figure 33 from scratch using the spec at the bottom of this file
+    ("ERD SPEC — full entity-by-entity definitions").
+[ ] Use Crow's-Foot notation. Most ERD tools support this (draw.io, Lucid,
+    StarUML, dbdiagram.io, Visual Paradigm).
+[ ] Preserve color coding if your existing diagram uses it (e.g. blue for PK,
+    yellow for FK).
+
+
+================================================================================
+STEP 6 — ADD evaluation sections to Chapter IV
+================================================================================
+[ ] In Chapter IV, after your existing evaluation discussion, add two new
+    sub-sections.
+
+--- BEGIN PASTE ---
+
+Evaluation of Task Prioritization
+
+The Smart Priority algorithm is evaluated on five metrics across a two-week
+field trial with 10–15 UCLM students who use TASKCHAMP for all academic tasks
+during the trial.
+
+  Metric                          Definition                                Target
+  --------------------------      --------------------------------------    ----------
+  Precision@3                     Of the three tasks the algorithm ranks    ≥ 0.70
+                                  highest, how many appear among the
+                                  user's first three actual completions?
+  Mean Time-to-Completion (top-3) Average days from creation to             Lower than for
+                                  completion for tasks ranked top three.    un-prioritized tasks
+  Missed Deadline Rate            (overdue + late completions) /            ≤ 0.20
+                                  total tasks with deadlines
+  On-Time Rate                    Tasks completed on or before deadline /   ≥ 0.80
+                                  total deadline-bearing tasks
+  User Agreement (Likert)         "The recommended priority order matches   Mean ≥ 4.0 / 5
+                                  what I would have chosen myself."
+
+Data is captured automatically via the tasks table fields (smart_priority,
+due_date, completed, updated_at) and supplemented by a post-trial Likert
+survey administered to all participants.
+
+
+Evaluation of Grade Forecasting
+
+Forecasts are captured at week 1, week 4, and week 8 of the semester, then
+compared to the actual final grade reported by the student.
+
+  Metric                          Definition                                Target
+  --------------------------      --------------------------------------    ----------
+  MAE (Mean Absolute Error)       Σ |predicted − actual| / N                ≤ 5
+                                                                            percentage points
+  RMSE (Root Mean Squared Error)  √(Σ(predicted − actual)² / N)             ≤ 7
+  Direction Accuracy              (# correctly predicted pass/fail) / N     ≥ 0.85
+  Forecast Stability              Standard deviation of predictions for     ≤ 5
+                                  the same course across the three
+                                  checkpoints
+
+Reporting MAE and RMSE per checkpoint demonstrates whether the forecast
+tightens as the semester progresses, which is the expected behavior of any
+reasonable forecasting model.
+
+--- END PASTE ---
+
+
+================================================================================
+STEP 7 — UPDATE LIST OF FIGURES and LIST OF TABLES
+================================================================================
+[ ] Add new entries:
+       Fig 28  Create Personal Task and Definition
+       Fig 29  Manage Programs (Admin) and Definition
+       Fig 30  Manage Students (Admin) and Definition
+       Fig 31  Request AI Insights and Definition
+       Fig 32  Request Grade Forecast and Definition
+
+[ ] Remove or repurpose:
+       Fig 24 (Clear Data) — remove
+       Fig 27 (Backup & Sync) — remove or repurpose
+
+[ ] Renumber remaining figures so the index is sequential.
+
+[ ] Add new tables:
+       Table 17  Steps in creating a personal task
+       Table 18  Steps in managing programs
+       Table 19  Steps in managing students
+       Table 20  Steps in requesting AI insights
+       Table 21  Steps in requesting grade forecast
+
+[ ] Remove Table 13 (Clear Data) and Table 16 (Backup & Sync).
+
+
+================================================================================
+ERD SPEC — full entity-by-entity definitions for Figure 33
+================================================================================
+
+How to read this:
+  - Each block is one entity (one box in the ERD).
+  - PK = Primary Key, FK = Foreign Key.
+  - "→ table.column" indicates a foreign-key reference.
+  - Cardinalities are listed under RELATIONSHIPS at the bottom.
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: profiles
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         (also FK → auth.users.id, cascade delete)
+       email             VARCHAR      UNIQUE NOT NULL
+       name              VARCHAR      NOT NULL
+       course            VARCHAR      NULL — degree program code (e.g. 'BSCS')
+       education_level   VARCHAR      NULL — '1st year', '2nd year', ..., 'PhD'
+       role              VARCHAR      NOT NULL DEFAULT 'student'
+                                       CHECK (role IN ('student','admin'))
+       avatar_url        TEXT         NULL
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+       updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+  Notes:
+    - Auto-populated by SQL trigger on_auth_user_created when a new auth.users
+      row is inserted (reads name / course / education_level / role from
+      raw_user_meta_data).
+    - Trigger touch_updated_at maintains updated_at on every UPDATE.
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: programs
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+       code              VARCHAR      UNIQUE NOT NULL — e.g. 'BSCS', 'BSIT'
+       name              VARCHAR      NOT NULL — e.g. 'Bachelor of Science in
+                                                       Computer Science'
+       is_active         BOOLEAN      NOT NULL DEFAULT true
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+  Notes:
+    - Admin-managed lookup table.
+    - Powers the registration dropdown for "Course".
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: courses                              (per-user subjects: CS101, MATH202)
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+  FK   user_id           UUID         NOT NULL → profiles.id (cascade delete)
+       code              VARCHAR      NOT NULL
+       name              VARCHAR      NOT NULL
+       professor         VARCHAR      NULL
+       color             VARCHAR      NULL — hex like '#4ECDC4'
+       credits           NUMERIC(4,2) NULL
+       current_grade     NUMERIC(5,2) NULL
+       target_grade      NUMERIC(5,2) NULL
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+       updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: tasks
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+  FK   user_id           UUID         NOT NULL → profiles.id (cascade delete)
+       title             VARCHAR      NOT NULL
+       description       TEXT         NULL
+       completed         BOOLEAN      NOT NULL DEFAULT false
+       status            VARCHAR      NOT NULL DEFAULT 'to-do'
+                                       CHECK (status IN
+                                       ('to-do','in-progress','completed'))
+       priority          VARCHAR      NOT NULL DEFAULT 'medium'
+                                       CHECK (priority IN ('low','medium','high'))
+       category          VARCHAR      NULL
+       due_date          TIMESTAMPTZ  NULL
+       is_academic       BOOLEAN      NOT NULL DEFAULT true
+  FK   course_id         UUID         NULL → courses.id (set NULL on delete)
+       task_type         VARCHAR      NOT NULL DEFAULT 'other'
+                                       CHECK (task_type IN
+                                       ('assignment','exam','project',
+                                        'reading','study','other'))
+       estimated_time    INTEGER      NULL — minutes
+       actual_time       INTEGER      NULL — minutes
+       difficulty        VARCHAR      NULL
+                                       CHECK (difficulty IN
+                                       ('easy','medium','hard'))
+       grade             NUMERIC(5,2) NULL — score after completion
+       weight            NUMERIC(5,2) NULL — % of final grade
+       smart_priority    NUMERIC(6,2) NULL — computed by client (0-100)
+       urgency_score     NUMERIC(6,2) NULL — computed (0-50)
+       importance_score  NUMERIC(6,2) NULL — computed (0-50)
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+       updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: resources                  (files / links / notes attached to a task)
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+  FK   task_id           UUID         NOT NULL → tasks.id (cascade delete)
+       type              VARCHAR      NOT NULL
+                                       CHECK (type IN
+                                       ('link','file','note','video','document'))
+       title             VARCHAR      NOT NULL
+       url               TEXT         NULL — file URI or web URL
+       description       TEXT         NULL
+       attached_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: calendar_events
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+  FK   user_id           UUID         NOT NULL → profiles.id (cascade delete)
+       title             VARCHAR      NOT NULL
+       description       TEXT         NULL
+       type              VARCHAR      NOT NULL
+                                       CHECK (type IN
+                                       ('class','exam','assignment',
+                                        'event','reminder'))
+       start_date        DATE         NOT NULL
+       end_date          DATE         NULL
+       start_time        TIME         NULL
+       end_time          TIME         NULL
+       location          VARCHAR      NULL
+       color             VARCHAR      NULL
+       recurring         VARCHAR      NULL DEFAULT 'none'
+                                       CHECK (recurring IN
+                                       ('none','daily','weekly','monthly'))
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+       updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+────────────────────────────────────────────────────────────────────────────────
+ENTITY: study_sessions
+────────────────────────────────────────────────────────────────────────────────
+  PK   id                UUID         DEFAULT gen_random_uuid()
+  FK   user_id           UUID         NOT NULL → profiles.id (cascade delete)
+  FK   task_id           UUID         NULL → tasks.id (set NULL on delete)
+       start_time        TIMESTAMPTZ  NOT NULL
+       end_time          TIMESTAMPTZ  NULL
+       duration          INTEGER      NOT NULL DEFAULT 0 — minutes
+       type              VARCHAR      NOT NULL DEFAULT 'focus'
+                                       CHECK (type IN
+                                       ('focus','break','review'))
+       productivity      VARCHAR      NULL
+                                       CHECK (productivity IN
+                                       ('low','medium','high'))
+       created_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+
+
+────────────────────────────────────────────────────────────────────────────────
+RELATIONSHIPS — draw these as Crow's-Foot connectors
+────────────────────────────────────────────────────────────────────────────────
+
+  programs (1) ────────── (0..N) profiles
+       — One program is taken by zero-or-many students.
+       — A student belongs to exactly one program (or none).
+       — (Soft FK: profiles.course references programs.code by string;
+          not enforced at DB level so admins can change program codes.)
+
+  profiles (1) ────────── (0..N) courses
+       — One student owns many subjects (CS101, MATH202, etc.).
+
+  profiles (1) ────────── (0..N) tasks
+       — One student creates many tasks.
+
+  profiles (1) ────────── (0..N) calendar_events
+       — One student has many calendar events.
+
+  profiles (1) ────────── (0..N) study_sessions
+       — One student logs many study sessions.
+
+  courses (1) ────────── (0..N) tasks
+       — One subject can have many tasks linked to it.
+       — A task may have zero or one linked course.
+       — (Personal tasks have course_id NULL.)
+
+  tasks (1) ────────── (0..N) resources
+       — One task can have many attached resources.
+       — Resources cascade-delete when their parent task is deleted.
+
+  tasks (1) ────────── (0..N) study_sessions
+       — A study session may be linked to one task or none.
+       — Deleting a task sets the session's task_id to NULL (kept for stats).
+
+
+  HOW TO LAY OUT THE DIAGRAM:
+
+  Place programs and profiles at the top.
+  Below profiles place its four child tables horizontally:
+    courses | tasks | calendar_events | study_sessions
+  Then below tasks:
+    resources    (cascade child of tasks)
+  Connect study_sessions back up to tasks with a dashed line (optional FK).
+
+  Use the legend:
+    ─── solid line: required relationship (NOT NULL FK)
+    ┄┄┄ dashed line: optional relationship (NULL-able FK)
+
+
+================================================================================
+FINAL CHECKLIST
+================================================================================
+
+Documentation:
+  [ ] STEP 1 — Objectives replaced
+  [ ] STEP 2 — Use Case Diagram (Figure 14) re-drawn with 3 actors
+  [ ] STEP 3 — Sub-figures and step tables updated / added / removed
+  [ ] STEP 4 — Algorithms section added in Chapter III
+  [ ] STEP 5 — ERD (Figure 33) re-drawn from spec
+  [ ] STEP 6 — Evaluation sections added in Chapter IV
+  [ ] STEP 7 — List of Figures and List of Tables re-numbered
+  [ ] Final pass: spell-check, page numbering, consistent terminology
+                 (always "Task AI", never "Gemini" in user-facing prose)
+
+Submission:
+  [ ] Send to Dr. Bucol for advisor review.
+  [ ] Schedule modular checking with Ms. Gepiga (face-to-face).
+  [ ] Schedule online checking with Ms. Miro.
+
+When the draft is ready, paste it back to the developer (Angel) for a
+consistency check against the actual code and Supabase schema.
+
+================================================================================
+END OF FILE
+================================================================================

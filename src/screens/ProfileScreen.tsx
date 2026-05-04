@@ -234,13 +234,14 @@ export default function ProfileScreen({ navigation }: Props) {
         </Card.Content>
       </Card>
 
-      {/* Features Card */}
+      {/* Features Card — student only (admin tabs already cover their flows) */}
+      {user?.role !== 'admin' && (
       <Card style={styles.featuresCard}>
         <Card.Content>
           <Text variant="titleMedium" style={styles.cardTitle}>
             Features
           </Text>
-          
+
           <List.Section>
             <List.Item
               title="Manage Courses"
@@ -292,14 +293,16 @@ export default function ProfileScreen({ navigation }: Props) {
           </List.Section>
         </Card.Content>
       </Card>
+      )}
 
-      {/* Settings Card */}
+      {/* Settings Card — student only */}
+      {user?.role !== 'admin' && (
       <Card style={styles.settingsCard}>
         <Card.Content>
           <Text variant="titleMedium" style={styles.cardTitle}>
             Settings
           </Text>
-          
+
           <List.Section>
             <List.Item
               title="Account Settings"
@@ -327,6 +330,7 @@ export default function ProfileScreen({ navigation }: Props) {
           </List.Section>
         </Card.Content>
       </Card>
+      )}
 
       {/* Action Buttons */}
       <Card style={styles.actionsCard}>

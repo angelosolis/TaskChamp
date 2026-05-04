@@ -118,10 +118,10 @@ export default function TaskListScreen({ navigation }: Props) {
           <Chip
             mode="outlined"
             compact
-            textStyle={[styles.priorityText, { color: getPriorityColor(task.priority) }]}
-            style={[styles.priorityChip, { borderColor: getPriorityColor(task.priority) }]}
+            textStyle={[styles.priorityText, { color: getPriorityColor(task.priority || 'medium') }]}
+            style={[styles.priorityChip, { borderColor: getPriorityColor(task.priority || 'medium') }]}
           >
-            {task.priority.toUpperCase()}
+            {(task.priority || 'medium').toUpperCase()}
           </Chip>
         </View>
 

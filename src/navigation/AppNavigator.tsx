@@ -9,6 +9,8 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import { loadUser, setUserFromSession } from '../store/slices/authSlice';
 import { loadTasks } from '../store/slices/taskSlice';
 import { loadEvents } from '../store/slices/calendarSlice';
+import { loadCourses } from '../store/slices/academicSlice';
+import { loadPrograms } from '../store/slices/programsSlice';
 import { inAppAlertService } from '../services/inAppAlertService';
 import { useNotification } from '../components/NotificationProvider';
 import { supabase } from '../services/supabase';
@@ -132,6 +134,8 @@ function MainTabNavigator() {
   useEffect(() => {
     dispatch(loadTasks());
     dispatch(loadEvents());
+    dispatch(loadCourses());
+    dispatch(loadPrograms());
   }, [dispatch]);
 
   // Check for alerts when tasks load or app becomes active
